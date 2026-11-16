@@ -1,0 +1,2017 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Bản đồ số THPT Chuyên Nguyễn Quang Diêu</title>
+  <!-- Link font động để Full Admin có thể chèn font sự kiện (VD: Halloween) -->
+  <link id="custom-font-link" rel="stylesheet" href="" />
+  <style>
+    :root {
+      --app-font: 'Times New Roman', Times, serif;
+      --bg-web: #f1f5f9;
+      --bg-courtyard: #d1d5db;
+      --color-corridor: #fef3c7;
+      --color-class: #26c6da;
+      --color-admin: #fcd34d;
+      --color-wc: #b388ff;
+      --color-facility: #29b6f6;
+      --color-stair: #38bdf8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      font-family: var(--app-font);
+      background-color: var(--bg-web);
+      color: #0f172a;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ================= HEADER PHẦN 1 (A5a) ================= */
+    #app-header {
+      background: #ffffff;
+      border-bottom: 1px solid #cbd5e1;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      z-index: 41;
+      flex-shrink: 0;
+    }
+
+    .brand-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .logo-strip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .logo-badge {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1.5px solid #0f172a;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 11px;
+      color: #dc2626;
+      overflow: hidden;
+    }
+
+    .logo-badge img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .title-block {
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    #header-title {
+      font-size: 17px;
+      font-weight: bold;
+      color: #0f172a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #header-event-meta {
+      font-size: 12px;
+      color: #475569;
+      display: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .hdr-btn {
+      font-family: var(--app-font);
+      font-size: 12px;
+      font-weight: bold;
+      padding: 5px 9px;
+      border-radius: 6px;
+      border: 1.5px solid #0f172a;
+      background: #f8fafc;
+      color: #0f172a;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .hdr-btn:hover {
+      background: #e2e8f0;
+    }
+
+    .hdr-btn.sponsor-btn {
+      background: #fef3c7;
+      border-color: #d97706;
+      color: #92400e;
+      display: none;
+    }
+
+    .bg-picker-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: bold;
+      padding: 3px 7px;
+      border: 1.5px solid #0f172a;
+      border-radius: 6px;
+      background: #f8fafc;
+    }
+
+    .bg-picker-wrap input[type="color"] {
+      width: 20px;
+      height: 20px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    /* ================= THANH ĐIỀU KHIỂN KHUNG ĐEN NỔI BẬT (A5b - ĐÃ CẬP NHẬT) ================= */
+    #filter-bar {
+      background: #0f172a; /* Nền đen xanh đậm nổi bật hẳn so với Map ở dưới */
+      border-top: 2px solid #000000;
+      border-bottom: 3px solid #000000;
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 40;
+      flex-shrink: 0;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.38);
+    }
+
+    .search-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .search-box {
+      position: relative;
+      flex: 1;
+    }
+
+    #search-input {
+      width: 100%;
+      font-family: var(--app-font);
+      font-size: 14px;
+      padding: 7px 30px 7px 12px;
+      background: #1e293b;
+      color: #ffffff;
+      border: 1.5px solid #475569;
+      border-radius: 8px;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    #search-input::placeholder {
+      color: #94a3b8;
+    }
+
+    #search-input:focus {
+      border-color: #38bdf8;
+      background: #0f172a;
+    }
+
+    #search-clear {
+      position: absolute;
+      right: 9px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      font-size: 14px;
+      color: #cbd5e1;
+      cursor: pointer;
+      display: none;
+    }
+
+    #search-suggestions {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1.5px solid #38bdf8;
+      border-radius: 8px;
+      max-height: 220px;
+      overflow-y: auto;
+      z-index: 100;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.5);
+      display: none;
+    }
+
+    .suggestion-item {
+      padding: 8px 12px;
+      border-bottom: 1px solid #334155;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .suggestion-item:hover {
+      background: #0284c7;
+      color: #ffffff;
+    }
+
+    .filter-scroll {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+    }
+
+    .filter-scroll::-webkit-scrollbar {
+      display: none;
+    }
+
+    .filter-chip {
+      font-family: var(--app-font);
+      font-size: 13px;
+      font-weight: bold;
+      padding: 5px 11px;
+      border-radius: 999px;
+      border: 1px solid #475569;
+      background: #1e293b;
+      color: #e2e8f0;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.18s ease;
+    }
+
+    .filter-chip:hover {
+      background: #334155;
+      border-color: #94a3b8;
+    }
+
+    .filter-chip.active {
+      background: #38bdf8;
+      color: #0f172a;
+      border-color: #bae6fd;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.55);
+    }
+
+    .filter-chip.event-tag-chip {
+      border-color: #f59e0b;
+      background: #451a03;
+      color: #fde68a;
+    }
+
+    .filter-chip.event-tag-chip.active {
+      background: #f59e0b;
+      color: #0f172a;
+      border-color: #fef3c7;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
+    }
+
+    .filter-divider {
+      width: 1.5px;
+      height: 20px;
+      background: #475569;
+      flex-shrink: 0;
+      margin: 0 2px;
+    }
+
+    /* ================= KHUNG CHÍNH (CHIA 6/4 CHO ADMIN MÁY TÍNH) ================= */
+    #main-workspace {
+      flex: 1;
+      display: flex;
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+    }
+
+    #map-viewport {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background-color: var(--bg-web);
+      touch-action: none;
+      cursor: grab;
+      transition: width 0.25s ease;
+    }
+
+    #map-viewport:active {
+      cursor: grabbing;
+    }
+
+    body.admin-split-mode #map-viewport {
+      flex: 0 0 60%;
+      max-width: 60%;
+      border-right: 3px solid #0f172a;
+    }
+
+    #admin-panel-container {
+      display: none;
+      flex: 0 0 40%;
+      max-width: 40%;
+      height: 100%;
+      background: #ffffff;
+      overflow-y: auto;
+      z-index: 45;
+    }
+
+    body.admin-split-mode #admin-panel-container {
+      display: block;
+    }
+
+    /* ================= BẢN ĐỒ 2D CANVAS ================= */
+    #map-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1750px;
+      height: 1560px;
+      transform-origin: 0 0;
+      will-change: transform;
+    }
+
+    .courtyard-surface {
+      position: absolute;
+      background: var(--bg-courtyard);
+      border-radius: 4px;
+      z-index: 1;
+    }
+
+    .corridor-surface {
+      position: absolute;
+      background: var(--color-corridor);
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: bold;
+      color: #475569;
+      pointer-events: none;
+    }
+
+    .corridor-surface.vertical-text span {
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+    }
+
+    .floor-header-badge {
+      position: absolute;
+      background: #fcd34d;
+      border: 1px solid #d97706;
+      font-size: 13px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 3;
+      color: #0f172a;
+    }
+
+    .map-label-static {
+      position: absolute;
+      font-weight: bold;
+      color: #0f172a;
+      z-index: 3;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .map-room {
+      position: absolute;
+      border: 1.5px solid rgba(15, 23, 42, 0.25);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 4px;
+      font-weight: bold;
+      color: #0f172a;
+      cursor: pointer;
+      z-index: 10;
+      transition: opacity 0.25s ease, transform 0.25s ease, filter 0.25s ease, box-shadow 0.2s ease;
+      overflow: hidden;
+      line-height: 1.15;
+    }
+
+    .map-room:hover {
+      box-shadow: inset 0 0 0 2px #0f172a;
+      z-index: 15;
+    }
+
+    .map-room.selected-room {
+      outline: 3.5px solid #dc2626;
+      outline-offset: -2px;
+      box-shadow: 0 0 15px rgba(220, 38, 38, 0.55);
+      z-index: 22 !important;
+    }
+
+    .map-room.vertical-label .room-title {
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+    }
+
+    .room-title {
+      pointer-events: none;
+      word-break: break-word;
+    }
+
+    .room-tag-icons {
+      font-size: 11px;
+      margin-top: 2px;
+      pointer-events: none;
+    }
+
+    .room-maint-badge {
+      font-size: 10px;
+      background: #dc2626;
+      color: #fff;
+      padding: 1px 4px;
+      border-radius: 3px;
+      margin-top: 2px;
+      pointer-events: none;
+    }
+
+    /* HIỆU ỨNG BỘ LỌC (A3): Ô không được chọn biến thành xám trắng, nhạt còn 10/100 và chìm xuống */
+    .map-room.filtered-dim {
+      opacity: 0.10 !important;
+      filter: grayscale(100%) brightness(1.35) !important;
+      transform: scale(0.95) !important;
+      background-color: #e2e8f0 !important;
+      z-index: 4 !important;
+    }
+
+    .map-room.filtered-active {
+      opacity: 1 !important;
+      filter: none !important;
+      transform: scale(1.02);
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.28);
+      z-index: 18;
+    }
+
+    .map-room.route-highlight {
+      opacity: 1 !important;
+      filter: none !important;
+      transform: scale(1.03) !important;
+      outline: 3px solid #2563eb !important;
+      z-index: 24 !important;
+    }
+
+    .fixed-landmark {
+      position: absolute;
+      z-index: 20;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+
+    .interior-subgrid {
+      position: absolute;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.92);
+      z-index: 14;
+      border: 2px dashed #0284c7;
+    }
+
+    .interior-item {
+      position: absolute;
+      border: 1px solid #334155;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2px;
+      cursor: pointer;
+      overflow: hidden;
+    }
+
+    #routing-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1750px;
+      height: 1560px;
+      pointer-events: none;
+      z-index: 35;
+    }
+
+    /* ================= CỤM NÚT ĐIỀU KHIỂN ĐÁY MÀN HÌNH & NÚT XEM THÔNG TIN (E1) ================= */
+    #bottom-hud {
+      position: absolute;
+      bottom: 14px;
+      left: 12px;
+      right: 12px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      pointer-events: none;
+      z-index: 38;
+      gap: 10px;
+    }
+
+    #selected-room-bar {
+      pointer-events: auto;
+      background: #0f172a;
+      color: #ffffff;
+      padding: 8px 12px;
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+      display: none;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      max-width: calc(100% - 60px);
+      border: 2px solid #38bdf8;
+    }
+
+    .sel-room-name {
+      font-size: 14px;
+      font-weight: bold;
+      color: #38bdf8;
+      margin-right: 4px;
+    }
+
+    .hud-action-btn {
+      font-family: var(--app-font);
+      font-size: 13px;
+      font-weight: bold;
+      padding: 6px 11px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .btn-open-info {
+      background: #f59e0b;
+      color: #0f172a;
+    }
+
+    .btn-set-start {
+      background: #10b981;
+      color: #ffffff;
+    }
+
+    .btn-set-end {
+      background: #ef4444;
+      color: #ffffff;
+    }
+
+    .zoom-controls {
+      pointer-events: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-left: auto;
+    }
+
+    .zoom-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      border: 2px solid #0f172a;
+      background: #ffffff;
+      color: #0f172a;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.22);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .zoom-btn:active {
+      background: #cbd5e1;
+    }
+
+    /* ================= POPUP THÔNG TIN TRUNG TÂM 2/5 MÀN HÌNH & KHÓA NỀN (E1, B1, B2, B3) ================= */
+    #info-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      z-index: 90;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      touch-action: none;
+    }
+
+    #info-modal-card {
+      width: 100%;
+      max-width: 420px;
+      min-height: 36vh;
+      max-height: 44vh;
+      background: #ffffff;
+      border-radius: 14px;
+      border: 2px solid #0f172a;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.45);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: popCenter 0.18s ease-out;
+    }
+
+    @keyframes popCenter {
+      from { transform: scale(0.92); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-header {
+      padding: 10px 14px;
+      background: #0f172a;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    #modal-room-title {
+      font-size: 17px;
+      font-weight: bold;
+    }
+
+    .modal-close-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+      border: 1px solid #475569;
+      background: #dc2626;
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .modal-body {
+      padding: 12px 14px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    #modal-tags-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .modal-badge {
+      font-size: 12px;
+      font-weight: bold;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: #e2e8f0;
+      color: #1e293b;
+    }
+
+    .modal-badge.special-tag {
+      background: #fef3c7;
+      color: #b45309;
+      border: 1px solid #f59e0b;
+    }
+
+    #modal-img-wrap {
+      width: 100%;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #cbd5e1;
+      display: none;
+      position: relative;
+      cursor: zoom-in;
+      background: #f8fafc;
+    }
+
+    #modal-img-wrap img {
+      width: 100%;
+      max-height: 150px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .zoom-hint {
+      position: absolute;
+      bottom: 6px;
+      right: 6px;
+      background: rgba(15, 23, 42, 0.75);
+      color: #fff;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    #modal-desc {
+      font-size: 14px;
+      line-height: 1.45;
+      color: #1e293b;
+      white-space: pre-line;
+    }
+
+    .modal-footer {
+      padding: 8px 14px;
+      border-top: 1px solid #e2e8f0;
+      background: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+
+    /* ================= XEM ẢNH PHÓNG TO TOÀN MÀN HÌNH (B3) ================= */
+    #lightbox-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.92);
+      z-index: 120;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    #lightbox-img {
+      max-width: 96vw;
+      max-height: 88vh;
+      object-fit: contain;
+      border-radius: 8px;
+      border: 2px solid #fff;
+    }
+
+    #lightbox-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: #dc2626;
+      color: #fff;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    /* ================= TRANG KÉO CÁC NHÀ TÀI TRỢ (E4, F2) ================= */
+    #sponsors-drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.65);
+      z-index: 105;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    #sponsors-drawer {
+      width: 100%;
+      max-width: 680px;
+      max-height: 85vh;
+      background: #ffffff;
+      border-radius: 14px;
+      border: 2px solid #f59e0b;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.45);
+    }
+
+    .sponsors-body {
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .sponsor-tier-section {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px;
+      background: #fffbeb;
+    }
+
+    .sponsor-tier-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: #b45309;
+      border-bottom: 1.5px solid #fcd34d;
+      padding-bottom: 6px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .sponsor-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 12px;
+    }
+
+    .sponsor-card {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 6px;
+      text-decoration: none;
+      color: #0f172a;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .sponsor-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+      border-color: #f59e0b;
+    }
+
+    .sponsor-card img {
+      width: 64px;
+      height: 64px;
+      object-fit: contain;
+      border-radius: 6px;
+    }
+
+    .sponsor-card-name {
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    @media (max-width: 640px) {
+      #header-title { font-size: 14px; }
+      .hdr-btn { font-size: 11px; padding: 4px 7px; }
+      .bg-picker-wrap span { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ================= HEADER PHẦN 1 (A5a) ================= -->
+  <header id="app-header">
+    <div class="brand-area">
+      <div class="logo-strip" id="header-logos">
+        <div class="logo-badge" title="THPT Chuyên Nguyễn Quang Diêu">NQD</div>
+      </div>
+      <div class="title-block">
+        <div id="header-title">THPT Chuyên Nguyễn Quang Diêu</div>
+        <div id="header-event-meta"></div>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button id="btn-open-sponsors" class="hdr-btn sponsor-btn" onclick="NQDMapApp.openSponsorsModal()">
+        🤝 Các nhà tài trợ
+      </button>
+
+      <label class="bg-picker-wrap" title="Đổi màu nền bản đồ">
+        <span>Nền:</span>
+        <input type="color" id="user-bg-picker" value="#f1f5f9" onchange="NQDMapApp.setWebBackground(this.value)" />
+      </label>
+
+      <button id="btn-admin-login" class="hdr-btn" onclick="NQDMapApp.triggerAdminLogin()">
+        🔐 Admin
+      </button>
+    </div>
+  </header>
+
+  <!-- ================= THANH ĐIỀU KHIỂN KHUNG ĐEN NỔI BẬT (A5b) ================= -->
+  <section id="filter-bar">
+    <div class="search-row">
+      <div class="search-box">
+        <input
+          type="text"
+          id="search-input"
+          placeholder="🔍 Tìm tên phòng, lớp học, khu vực..."
+          autocomplete="off"
+        />
+        <button id="search-clear" onclick="NQDMapApp.clearSearch()">✖</button>
+        <div id="search-suggestions"></div>
+      </div>
+      <!-- Cổng chờ nút định vị / QR cho Chặng 2 -->
+      <div id="routing-header-slot"></div>
+    </div>
+
+    <div class="filter-scroll" id="filter-chips-container">
+      <!-- Bộ lọc phân tầng -->
+      <button class="filter-chip active" data-filter-type="all" data-filter-val="all" onclick="NQDMapApp.applyFilter('all','all',this)">
+        Tất cả
+      </button>
+      <button class="filter-chip" data-filter-type="floor" data-filter-val="tret" onclick="NQDMapApp.applyFilter('floor','tret',this)">
+        Trệt
+      </button>
+      <button class="filter-chip" data-filter-type="floor" data-filter-val="lau1" onclick="NQDMapApp.applyFilter('floor','lau1',this)">
+        Lầu 1
+      </button>
+      <button class="filter-chip" data-filter-type="floor" data-filter-val="lau2" onclick="NQDMapApp.applyFilter('floor','lau2',this)">
+        Lầu 2
+      </button>
+
+      <div class="filter-divider"></div>
+
+      <!-- Bộ lọc phân khu trường học gọn gàng cho Map Gốc -->
+      <button class="filter-chip" data-filter-type="category" data-filter-val="classroom" onclick="NQDMapApp.applyFilter('category','classroom',this)">
+        🏫 Lớp học
+      </button>
+      <button class="filter-chip" data-filter-type="category" data-filter-val="lab" onclick="NQDMapApp.applyFilter('category','lab',this)">
+        🔬 Phòng TN/BM
+      </button>
+      <button class="filter-chip" data-filter-type="category" data-filter-val="admin" onclick="NQDMapApp.applyFilter('category','admin',this)">
+        🏛️ Hành chính
+      </button>
+      <button class="filter-chip" data-filter-type="category" data-filter-val="outer" onclick="NQDMapApp.applyFilter('category','outer',this)">
+        🌳 Ngoại vi
+      </button>
+      <button class="filter-chip" data-filter-type="category" data-filter-val="wc" onclick="NQDMapApp.applyFilter('category','wc',this)">
+        🚻 WC
+      </button>
+
+      <!-- Vách ngăn & Bộ lọc Nhãn sự kiện: Tự động ẩn ở Map Gốc, chỉ hiện khi ở Sheet Sự Kiện -->
+      <div class="filter-divider" id="event-filter-divider" style="display:none;"></div>
+      <div id="event-filter-chips" style="display:none; gap:6px;"></div>
+    </div>
+  </section>
+
+  <!-- ================= KHÔNG GIAN BẢN ĐỒ & BẢNG ADMIN 6/4 ================= -->
+  <main id="main-workspace">
+    <div id="map-viewport">
+      <div id="map-canvas">
+        <div id="map-base-surfaces"></div>
+        <div id="map-rooms-layer"></div>
+        <div id="map-landmarks-layer"></div>
+        <svg id="routing-layer" viewBox="0 0 1750 1560" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+
+      <div id="bottom-hud">
+        <div id="selected-room-bar">
+          <span class="sel-room-name" id="hud-room-name">Tên phòng</span>
+          <button class="hud-action-btn btn-open-info" onclick="NQDMapApp.openSelectedRoomModal()">
+            ℹ️ Xem thông tin
+          </button>
+          <button class="hud-action-btn btn-set-start" onclick="NQDMapApp.requestRoutePoint('start')">
+            📍 Điểm đi (A)
+          </button>
+          <button class="hud-action-btn btn-set-end" onclick="NQDMapApp.requestRoutePoint('end')">
+            🚩 Điểm đến (B)
+          </button>
+        </div>
+
+        <div class="zoom-controls">
+          <button class="zoom-btn" title="Phóng to" onclick="NQDMapApp.zoomBy(1.22)">＋</button>
+          <button class="zoom-btn" title="Thu nhỏ" onclick="NQDMapApp.zoomBy(0.82)">－</button>
+          <button class="zoom-btn" title="Về tâm Cột cờ" onclick="NQDMapApp.centerOnFlagpole()">🚩</button>
+        </div>
+      </div>
+    </div>
+
+    <aside id="admin-panel-container"></aside>
+  </main>
+
+  <!-- ================= POPUP THÔNG TIN PHÒNG 2/5 MÀN HÌNH (E1, B1, B2, B3) ================= -->
+  <div id="info-modal-backdrop">
+    <div id="info-modal-card" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <span id="modal-room-title">Tên phòng</span>
+        <button class="modal-close-btn" onclick="NQDMapApp.closeRoomModal()" title="Đóng">✖</button>
+      </div>
+      <div class="modal-body">
+        <div id="modal-tags-row"></div>
+        <div id="modal-img-wrap" onclick="NQDMapApp.openLightbox()">
+          <img id="modal-img" src="" alt="Ảnh khu vực" />
+          <span class="zoom-hint">🔍 Chạm để phóng to</span>
+        </div>
+        <div id="modal-desc"></div>
+      </div>
+      <div class="modal-footer" id="modal-footer-actions">
+        <button class="hud-action-btn btn-set-start" onclick="NQDMapApp.requestRoutePoint('start'); NQDMapApp.closeRoomModal();">
+          📍 Tôi đang ở đây (A)
+        </button>
+        <button class="hud-action-btn btn-set-end" onclick="NQDMapApp.requestRoutePoint('end'); NQDMapApp.closeRoomModal();">
+          🚩 Chỉ đường tới đây (B)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= KHUNG XEM ẢNH PHÓNG TO TOÀN MÀN HÌNH (B3) ================= -->
+  <div id="lightbox-backdrop" onclick="NQDMapApp.closeLightbox()">
+    <button id="lightbox-close">✖ Đóng</button>
+    <img id="lightbox-img" src="" alt="Phóng to" onclick="event.stopPropagation()" />
+  </div>
+
+  <!-- ================= TRANG KÉO CÁC NHÀ TÀI TRỢ (E4, F2) ================= -->
+  <div id="sponsors-drawer-backdrop" onclick="NQDMapApp.closeSponsorsModal()">
+    <div id="sponsors-drawer" onclick="event.stopPropagation()">
+      <div class="modal-header" style="background:#b45309;">
+        <span style="font-size:17px; font-weight:bold;">🤝 Danh sách Nhà Tài Trợ & Đồng Hành</span>
+        <button class="modal-close-btn" onclick="NQDMapApp.closeSponsorsModal()">✖</button>
+      </div>
+      <div class="sponsors-body" id="sponsors-content-area"></div>
+    </div>
+  </div>
+
+  <!-- ================= LÕI DỮ LIỆU SƠ ĐỒ GỐC & ĐIỀU KHIỂN CHẶNG 1 ================= -->
+  <script>
+    window.NQDMapApp = (function () {
+      const STORAGE_KEY = 'NQD_MAP_MASTER_DATA_V2';
+
+      const DEFAULT_EVENT_TAGS = [
+        { id: 'tag_letan', label: '🛎️ Điểm Lễ tân' },
+        { id: 'tag_checkin', label: '📸 Điểm Hot Check-in' },
+        { id: 'tag_trochoi', label: '🎮 Điểm Trò chơi' },
+        { id: 'tag_thucan', label: '🍔 Điểm Thức ăn' }
+      ];
+
+      const BASE_SURFACES = [
+        { type: 'courtyard', x: 430, y: 635, w: 660, h: 555 },
+        { type: 'corridor', x: 390, y: 380, w: 40, h: 830, text: 'Hành lang', vertical: true },
+        { type: 'corridor', x: 430, y: 565, w: 660, h: 35, text: 'Hành lang', vertical: false },
+        { type: 'corridor', x: 1090, y: 70, w: 45, h: 1140, text: 'Hành lang', vertical: true },
+        { type: 'corridor', x: 390, y: 1190, w: 745, h: 40, text: 'Hành lang', vertical: false },
+        { type: 'corridor', x: 750, y: 280, w: 95, h: 100, text: 'Hành lang', vertical: false },
+        { type: 'label', x: 1140, y: 675, w: 195, h: 30, text: 'Lối xuống căn tin', fontSize: 14 },
+        { type: 'label', x: 1250, y: 315, w: 180, h: 30, text: 'Kí túc xá ➔', fontSize: 16 },
+        { type: 'floor_hdr', x: 210, y: 650, w: 58, h: 28, text: 'Lầu 2' },
+        { type: 'floor_hdr', x: 270, y: 650, w: 58, h: 28, text: 'Lầu 1' },
+        { type: 'floor_hdr', x: 330, y: 650, w: 58, h: 28, text: 'Trệt' },
+        { type: 'floor_hdr', x: 1138, y: 745, w: 64, h: 28, text: 'Lầu 2' },
+        { type: 'floor_hdr', x: 1204, y: 745, w: 64, h: 28, text: 'Lầu 1' },
+        { type: 'floor_hdr', x: 1270, y: 745, w: 64, h: 28, text: 'Trệt' }
+      ];
+
+      const FIXED_LANDMARKS = [
+        {
+          id: 'landmark_cong_chinh',
+          name: 'Cổng Chính',
+          floor: 'tret',
+          category: 'fixed',
+          x: 640, y: 1470, w: 290, h: 48,
+          locked: true,
+          desc: 'Cổng chính trường THPT Chuyên Nguyễn Quang Diêu — Điểm xuất phát trung tâm.'
+        },
+        {
+          id: 'landmark_tuong_cu',
+          name: 'Tượng Cụ Nguyễn Quang Diêu',
+          floor: 'tret',
+          category: 'fixed',
+          x: 758, y: 1405, w: 54, h: 54,
+          locked: true,
+          desc: 'Tượng Cụ Nguyễn Quang Diêu — Biểu tượng trung tâm phía trước Sảnh thông báo.'
+        },
+        {
+          id: 'landmark_cot_co',
+          name: 'Cột Cờ Trung Tâm',
+          floor: 'tret',
+          category: 'fixed',
+          x: 725, y: 790, w: 80, h: 170,
+          locked: true,
+          desc: 'Cột cờ trung tâm giữa sân trường.'
+        }
+      ];
+
+      function createDefaultRooms() {
+        return [
+          // 1. KHU NGOẠI VI & MỞ RỘNG
+          { id: 'san_bong_da', name: 'Sân bóng đá', floor: 'tret', category: 'facility', x: 140, y: 15, w: 580, h: 70, color: '#29b6f6', fontSize: 22, desc: 'Sân bóng đá ngoài trời của trường.' },
+          { id: 'vuon_rau', name: 'Vườn rau hữu cơ', floor: 'tret', category: 'facility', x: 280, y: 115, w: 430, h: 220, color: '#29b6f6', fontSize: 22, desc: 'Khu vực Vườn rau hữu cơ & thực nghiệm sinh học.' },
+          { id: 'nha_xe_hs', name: 'Nhà xe học sinh', floor: 'tret', category: 'facility', x: 25, y: 190, w: 105, h: 610, color: '#29b6f6', fontSize: 22, vertical: true, desc: 'Khu vực nhà xe dành cho học sinh.' },
+          { id: 'nha_thi_dau', name: 'Nhà thi đấu', floor: 'tret', category: 'facility', x: 1255, y: 10, w: 205, h: 255, color: '#29b6f6', fontSize: 22, vertical: true, hasInterior: true, interiorPublic: false, interiorItems: [], desc: 'Nhà thi đấu đa năng phục vụ thể thao và sự kiện lớn.' },
+          { id: 'can_tin', name: 'Căn tin', floor: 'tret', category: 'facility', x: 1385, y: 380, w: 105, h: 280, color: '#29b6f6', fontSize: 22, vertical: true, desc: 'Khu vực Căn tin phục vụ ăn uống giải lao.' },
+          { id: 'ktx_lon_moi', name: 'Khu Ký Túc Xá Lớn', floor: 'all', category: 'dorm', x: 1515, y: 310, w: 205, h: 350, color: '#fcd34d', fontSize: 19, vertical: true, desc: 'Khu Ký túc xá tập trung quy mô lớn nằm phía sau Căn tin.' },
+          { id: 'hoi_truong_lon', name: 'Hội trường lớn', floor: 'tret', category: 'facility', x: 1385, y: 745, w: 105, h: 525, color: '#29b6f6', fontSize: 21, vertical: true, hasInterior: true, interiorPublic: false, interiorItems: [], desc: 'Hội trường lớn — Nơi tổ chức lễ khai mạc, bế mạc và các chương trình sân khấu chính.' },
+          { id: 'nha_xe_gv', name: 'Nhà xe giáo viên', floor: 'tret', category: 'facility', x: 1210, y: 1445, w: 220, h: 85, color: '#29b6f6', fontSize: 15, desc: 'Khu vực nhà xe dành cho cán bộ, giáo viên và khách mời.' },
+
+          // 2. KHU KTX & LỚP HỌC PHÍA BẮC
+          { id: 'ktx_bac_l2_1', name: 'KTX', floor: 'lau2', category: 'dorm', x: 750, y: 75, w: 80, h: 62, color: '#26c6da', fontSize: 13, desc: 'Phòng Ký túc xá (Lầu 2 - Khu Bắc).' },
+          { id: 'ktx_bac_l2_2', name: 'KTX', floor: 'lau2', category: 'dorm', x: 832, y: 75, w: 80, h: 62, color: '#26c6da', fontSize: 13, desc: 'Phòng Ký túc xá (Lầu 2 - Khu Bắc).' },
+          { id: 'ktx_bac_l2_3', name: 'KTX', floor: 'lau2', category: 'dorm', x: 914, y: 75, w: 80, h: 62, color: '#26c6da', fontSize: 13, desc: 'Phòng Ký túc xá (Lầu 2 - Khu Bắc).' },
+          { id: 'ktx_bac_l1_1', name: 'KTX', floor: 'lau1', category: 'dorm', x: 750, y: 139, w: 80, h: 62, color: '#26c6da', fontSize: 13, desc: 'Phòng Ký túc xá (Lầu 1 - Khu Bắc).' },
+          { id: 'ktx_bac_l1_2', name: 'KTX', floor: 'lau1', category: 'dorm', x: 832, y: 139, w: 80, h: 62, color: '#26c6da', fontSize: 13, desc: 'Phòng Ký túc xá (Lầu 1 - Khu Bắc).' },
+          { id: 'ktx_bac_l1_3', name: 'KTX', floor: 'lau1', category: 'dorm', x: 914, y: 139, w: 80, h: 62, color: '#26c6da', fontSize: 13, desc: 'Phòng Ký túc xá (Lầu 1 - Khu Bắc).' },
+          { id: 'p_10t1', name: '10T1', floor: 'tret', category: 'classroom', x: 750, y: 203, w: 80, h: 72, color: '#26c6da', fontSize: 14, desc: 'Phòng học lớp 10 Toán 1 (Tầng Trệt).' },
+          { id: 'p_10t2', name: '10T2', floor: 'tret', category: 'classroom', x: 832, y: 203, w: 80, h: 72, color: '#26c6da', fontSize: 14, desc: 'Phòng học lớp 10 Toán 2 (Tầng Trệt).' },
+          { id: 'p_bm_bac', name: 'Phòng BM', floor: 'tret', category: 'lab', x: 914, y: 203, w: 80, h: 72, color: '#26c6da', fontSize: 13, desc: 'Phòng Bộ môn (Tầng Trệt - Khu Bắc).' },
+          { id: 'stair_bac', name: 'Cầu Thang', floor: 'all', category: 'stair', x: 996, y: 75, w: 54, h: 200, color: '#38bdf8', fontSize: 15, vertical: true, desc: 'Cầu thang khu KTX & lớp học phía Bắc.' },
+          { id: 'wc_ktx_3', name: 'WC KTX', floor: 'lau2', category: 'wc', x: 1052, y: 75, w: 36, h: 64, color: '#d8b4fe', fontSize: 10, vertical: true, desc: 'Nhà vệ sinh KTX (Lầu 2).' },
+          { id: 'wc_ktx_2', name: 'WC KTX', floor: 'lau1', category: 'wc', x: 1052, y: 141, w: 36, h: 64, color: '#a855f7', fontSize: 10, vertical: true, desc: 'Nhà vệ sinh KTX (Lầu 1).' },
+          { id: 'wc_ktx_1', name: 'WC KTX', floor: 'tret', category: 'wc', x: 1052, y: 207, w: 36, h: 68, color: '#c084fc', fontSize: 10, vertical: true, desc: 'Nhà vệ sinh KTX (Tầng Trệt).' },
+
+          // 3. DÃY CHÍNH GIỮA
+          { id: 'wc_3_1', name: 'WC 3.1', floor: 'lau2', category: 'wc', x: 210, y: 380, w: 58, h: 215, color: '#a855f7', fontSize: 14, vertical: true, desc: 'Nhà vệ sinh 3.1 (Lầu 2 - Dãy giữa trái).' },
+          { id: 'wc_2_1', name: 'WC 2.1', floor: 'lau1', category: 'wc', x: 270, y: 380, w: 58, h: 215, color: '#d8b4fe', fontSize: 14, vertical: true, desc: 'Nhà vệ sinh 2.1 (Lầu 1 - Dãy giữa trái).' },
+          { id: 'wc_1_1', name: 'WC 1.1', floor: 'tret', category: 'wc', x: 330, y: 380, w: 58, h: 215, color: '#9333ea', fontSize: 14, vertical: true, desc: 'Nhà vệ sinh 1.1 (Tầng Trệt - Dãy giữa trái).' },
+
+          { id: 'p_12h', name: '12H', floor: 'lau2', category: 'classroom', x: 430, y: 380, w: 92, h: 60, color: '#26c6da', fontSize: 14, desc: 'Phòng học lớp 12 Hóa (Lầu 2).' },
+          { id: 'p_12sv', name: '12SV', floor: 'lau2', category: 'classroom', x: 524, y: 380, w: 92, h: 60, color: '#26c6da', fontSize: 14, desc: 'Phòng học lớp 12 Sinh - Văn (Lầu 2).' },
+          { id: 'p_12t1', name: '12T1', floor: 'lau2', category: 'classroom', x: 618, y: 380, w: 92, h: 60, color: '#26c6da', fontSize: 14, desc: 'Phòng học lớp 12 Toán 1 (Lầu 2).' },
+          { id: 'p_12t2', name: '12T2', floor: 'lau2', category: 'classroom', x: 712, y: 380, w: 92, h: 60, color: '#26c6da', fontSize: 14, desc: 'Phòng học lớp 12 Toán 2 (Lầu 2).' },
+          { id: 'p_12s', name: '12S', floor: 'lau2', category: 'classroom', x: 806, y: 380, w: 92, h: 60, color: '#26c6da', fontSize: 14, desc: 'Phòng học lớp 12 Sử (Lầu 2).' },
+          { id: 'p_12d', name: '12Đ', floor: 'lau2', category: 'classroom', x: 900, y: 380, w: 92, h: 60, color: '#26c6da', fontSize: 14, desc: 'Phòng học lớp 12 Địa (Lầu 2).' },
+          { id: 'ktx_giua_l2', name: 'KTX', floor: 'lau2', category: 'dorm', x: 994, y: 380, w: 92, h: 60, color: '#fcd34d', fontSize: 13, desc: 'Khu nội trú KTX (Lầu 2 - Dãy giữa).' },
+
+          { id: 'p_11h', name: '11H', floor: 'lau1', category: 'classroom', x: 430, y: 442, w: 92, h: 60, color: '#26c6da', fontSize: 14, desc: 'Phòng học lớp 11 Hóa (Lầu 1).' },
+          { id: 'p_11sv', name: '11SV', floor: 'lau1', category: 'classroom', x: 524, y: 442, w: 92, h: 60, color: '#26c6da', fontSize: 14, desc: 'Phòng học lớp 11 Sinh - Văn (Lầu 1).' },
+          { id: 'p_11t1', name: '11T1', floor: 'lau1', category: 'classroom', x: 618, y: 442, w: 92, h: 60, color: '#26c6da', fontSize: 14, desc: 'Phòng học lớp 11 Toán 1 (Lầu 1).' },
+          { id: 'p_11t2', name: '11T2', floor: 'lau1', category: 'classroom', x: 712, y: 442, w: 92, h: 60, color: '#26c6da', fontSize: 14, desc: 'Phòng học lớp 11 Toán 2 (Lầu 1).' },
+          { id: 'p_11s', name: '11S', floor: 'lau1', category: 'classroom', x: 806, y: 442, w: 92, h: 60, color: '#26c6da', fontSize: 14, desc: 'Phòng học lớp 11 Sử (Lầu 1).' },
+          { id: 'p_11d', name: '11Đ', floor: 'lau1', category: 'classroom', x: 900, y: 442, w: 92, h: 60, color: '#26c6da', fontSize: 14, desc: 'Phòng học lớp 11 Địa (Lầu 1).' },
+          { id: 'ktx_giua_l1', name: 'KTX', floor: 'lau1', category: 'dorm', x: 994, y: 442, w: 92, h: 60, color: '#fcd34d', fontSize: 13, desc: 'Khu nội trú KTX (Lầu 1 - Dãy giữa).' },
+
+          { id: 'p_10l', name: '10L', floor: 'tret', category: 'classroom', x: 430, y: 504, w: 92, h: 60, color: '#26c6da', fontSize: 14, desc: 'Phòng học lớp 10 Lý (Tầng Trệt).' },
+          { id: 'p_10h', name: '10H', floor: 'tret', category: 'classroom', x: 524, y: 504, w: 92, h: 60, color: '#26c6da', fontSize: 14, desc: 'Phòng học lớp 10 Hóa (Tầng Trệt).' },
+          { id: 'p_10sv', name: '10SV', floor: 'tret', category: 'classroom', x: 618, y: 504, w: 92, h: 60, color: '#26c6da', fontSize: 14, desc: 'Phòng học lớp 10 Sinh - Văn (Tầng Trệt).' },
+          { id: 'sanh_chao_co', name: 'Sảnh Chào Cờ', floor: 'tret', category: 'admin', x: 712, y: 504, w: 92, h: 130, color: '#fcd34d', fontSize: 15, hasInterior: true, interiorPublic: false, interiorItems: [], desc: 'Sảnh Chào Cờ trung tâm đối diện Cột cờ.' },
+          { id: 'p_10s', name: '10S', floor: 'tret', category: 'classroom', x: 806, y: 504, w: 92, h: 60, color: '#26c6da', fontSize: 14, desc: 'Phòng học lớp 10 Sử (Tầng Trệt).' },
+          { id: 'p_10d', name: '10Đ', floor: 'tret', category: 'classroom', x: 900, y: 504, w: 92, h: 60, color: '#26c6da', fontSize: 14, desc: 'Phòng học lớp 10 Địa (Tầng Trệt).' },
+          { id: 'phong_y_te', name: 'Phòng Y Tế', floor: 'tret', category: 'admin', x: 994, y: 504, w: 92, h: 60, color: '#fcd34d', fontSize: 13, desc: 'Phòng Y Tế — Trực sơ cấp cứu và chăm sóc sức khỏe.' },
+
+          { id: 'stair_giua_trai', name: 'Cầu thang', floor: 'all', category: 'stair', x: 430, y: 602, w: 280, h: 32, color: '#38bdf8', fontSize: 14, desc: 'Cầu thang chính bên trái Sảnh Chào Cờ.' },
+          { id: 'stair_giua_phai', name: 'Cầu thang', floor: 'all', category: 'stair', x: 806, y: 602, w: 120, h: 32, color: '#38bdf8', fontSize: 14, desc: 'Cầu thang chính bên phải Sảnh Chào Cờ.' },
+
+          { id: 'wc_1_2', name: 'WC 1.2', floor: 'tret', category: 'wc', x: 1138, y: 380, w: 62, h: 215, color: '#9333ea', fontSize: 14, vertical: true, desc: 'Nhà vệ sinh 1.2 (Tầng Trệt - Dãy giữa phải).' },
+          { id: 'wc_2_2', name: 'WC 2.2', floor: 'lau1', category: 'wc', x: 1202, y: 380, w: 62, h: 215, color: '#d8b4fe', fontSize: 14, vertical: true, desc: 'Nhà vệ sinh 2.2 (Lầu 1 - Dãy giữa phải).' },
+          { id: 'wc_3_2', name: 'WC 3.2', floor: 'lau2', category: 'wc', x: 1266, y: 380, w: 62, h: 215, color: '#a855f7', fontSize: 14, vertical: true, desc: 'Nhà vệ sinh 3.2 (Lầu 2 - Dãy giữa phải).' },
+
+          // 4. DÃY HỌC BÊN TRÁI SÂN
+          { id: 'p_12l', name: '12L', floor: 'lau2', category: 'classroom', x: 210, y: 680, w: 58, h: 92, color: '#26c6da', fontSize: 14, vertical: true, desc: 'Phòng học lớp 12 Lý (Lầu 2 - Dãy trái).' },
+          { id: 'p_12th', name: '12TH', floor: 'lau2', category: 'classroom', x: 210, y: 774, w: 58, h: 92, color: '#26c6da', fontSize: 14, vertical: true, desc: 'Phòng học lớp 12 Tin học (Lầu 2 - Dãy trái).' },
+          { id: 'p_12av2', name: '12AV2', floor: 'lau2', category: 'classroom', x: 210, y: 868, w: 58, h: 92, color: '#26c6da', fontSize: 14, vertical: true, desc: 'Phòng học lớp 12 Anh Văn 2 (Lầu 2 - Dãy trái).' },
+          { id: 'p_12av1', name: '12AV1', floor: 'lau2', category: 'classroom', x: 210, y: 962, w: 58, h: 92, color: '#26c6da', fontSize: 14, vertical: true, desc: 'Phòng học lớp 12 Anh Văn 1 (Lầu 2 - Dãy trái).' },
+          { id: 'p_12v', name: '12V', floor: 'lau2', category: 'classroom', x: 210, y: 1056, w: 58, h: 92, color: '#26c6da', fontSize: 14, vertical: true, desc: 'Phòng học lớp 12 Văn (Lầu 2 - Dãy trái).' },
+
+          { id: 'p_11l', name: '11L', floor: 'lau1', category: 'classroom', x: 270, y: 680, w: 58, h: 92, color: '#26c6da', fontSize: 14, vertical: true, desc: 'Phòng học lớp 11 Lý (Lầu 1 - Dãy trái).' },
+          { id: 'p_11th', name: '11TH', floor: 'lau1', category: 'classroom', x: 270, y: 774, w: 58, h: 92, color: '#26c6da', fontSize: 14, vertical: true, desc: 'Phòng học lớp 11 Tin học (Lầu 1 - Dãy trái).' },
+          { id: 'p_11av2', name: '11AV2', floor: 'lau1', category: 'classroom', x: 270, y: 868, w: 58, h: 92, color: '#26c6da', fontSize: 14, vertical: true, desc: 'Phòng học lớp 11 Anh Văn 2 (Lầu 1 - Dãy trái).' },
+          { id: 'p_11av1', name: '11AV1', floor: 'lau1', category: 'classroom', x: 270, y: 962, w: 58, h: 92, color: '#26c6da', fontSize: 14, vertical: true, desc: 'Phòng học lớp 11 Anh Văn 1 (Lầu 1 - Dãy trái).' },
+          { id: 'p_11v', name: '11V', floor: 'lau1', category: 'classroom', x: 270, y: 1056, w: 58, h: 92, color: '#26c6da', fontSize: 14, vertical: true, desc: 'Phòng học lớp 11 Văn (Lầu 1 - Dãy trái).' },
+
+          { id: 'p_10th', name: '10TH', floor: 'tret', category: 'classroom', x: 330, y: 680, w: 58, h: 92, color: '#26c6da', fontSize: 14, vertical: true, desc: 'Phòng học lớp 10 Tin học (Tầng Trệt - Dãy trái).' },
+          { id: 'p_10av2', name: '10AV2', floor: 'tret', category: 'classroom', x: 330, y: 774, w: 58, h: 92, color: '#26c6da', fontSize: 14, vertical: true, desc: 'Phòng học lớp 10 Anh Văn 2 (Tầng Trệt - Dãy trái).' },
+          { id: 'sanh_av', name: 'Sảnh AV', floor: 'tret', category: 'admin', x: 330, y: 868, w: 58, h: 92, color: '#fcd34d', fontSize: 14, vertical: true, desc: 'Sảnh Anh Văn (Tầng Trệt - Dãy trái).' },
+          { id: 'p_10av1', name: '10AV1', floor: 'tret', category: 'classroom', x: 330, y: 962, w: 58, h: 92, color: '#26c6da', fontSize: 14, vertical: true, desc: 'Phòng học lớp 10 Anh Văn 1 (Tầng Trệt - Dãy trái).' },
+          { id: 'p_10v', name: '10V', floor: 'tret', category: 'classroom', x: 330, y: 1056, w: 58, h: 92, color: '#26c6da', fontSize: 14, vertical: true, desc: 'Phòng học lớp 10 Văn (Tầng Trệt - Dãy trái).' },
+
+          { id: 'stair_day_trai', name: 'Cầu thang', floor: 'all', category: 'stair', x: 210, y: 1150, w: 178, h: 40, color: '#38bdf8', fontSize: 15, desc: 'Cầu thang dãy học bên trái (cạnh Thư viện).' },
+
+          // 5. DÃY THỰC HÀNH & BỘ MÔN BÊN PHẢI SÂN
+          { id: 'ptn_hoa', name: 'PTN Hoá học', floor: 'lau2', category: 'lab', x: 1138, y: 775, w: 64, h: 150, color: '#26c6da', fontSize: 14, vertical: true, desc: 'Phòng Thí nghiệm Hoá học (Lầu 2 - Dãy phải).' },
+          { id: 'ptn_sinh', name: 'PTN Sinh học', floor: 'lau2', category: 'lab', x: 1138, y: 927, w: 64, h: 150, color: '#26c6da', fontSize: 14, vertical: true, desc: 'Phòng Thí nghiệm Sinh học (Lầu 2 - Dãy phải).' },
+          { id: 'ptn_ly', name: 'PTN Vật lý', floor: 'lau2', category: 'lab', x: 1138, y: 1079, w: 64, h: 149, color: '#26c6da', fontSize: 14, vertical: true, desc: 'Phòng Thí nghiệm Vật lý (Lầu 2 - Dãy phải).' },
+
+          { id: 'p_bm_l1_1', name: 'Phòng BM', floor: 'lau1', category: 'lab', x: 1204, y: 775, w: 64, h: 74, color: '#fcd34d', fontSize: 12, vertical: true, desc: 'Phòng Bộ môn 1 (Lầu 1 - Dãy phải).' },
+          { id: 'p_bm_l1_2', name: 'Phòng BM', floor: 'lau1', category: 'lab', x: 1204, y: 851, w: 64, h: 74, color: '#fcd34d', fontSize: 12, vertical: true, desc: 'Phòng Bộ môn 2 (Lầu 1 - Dãy phải).' },
+          { id: 'p_steam', name: 'Phòng STEAM', floor: 'lau1', category: 'lab', x: 1204, y: 927, w: 64, h: 86, color: '#fcd34d', fontSize: 13, vertical: true, desc: 'Phòng thực hành STEAM & Nghiên cứu khoa học (Lầu 1).' },
+          { id: 'kho_clb', name: 'Kho CLB', floor: 'lau1', category: 'lab', x: 1204, y: 1015, w: 64, h: 62, color: '#fcd34d', fontSize: 12, vertical: true, desc: 'Kho dụng cụ các Câu lạc bộ (Lầu 1).' },
+          { id: 'p_cong_nghe', name: 'Phòng Công Nghệ', floor: 'lau1', category: 'lab', x: 1204, y: 1079, w: 64, h: 86, color: '#fcd34d', fontSize: 12, vertical: true, desc: 'Phòng bộ môn Công Nghệ (Lầu 1).' },
+          { id: 'p_khach', name: 'Phòng Khách', floor: 'lau1', category: 'admin', x: 1204, y: 1167, w: 64, h: 61, color: '#fcd34d', fontSize: 12, desc: 'Phòng tiếp khách (Lầu 1 - Dãy phải).' },
+
+          { id: 'p_may_1', name: 'Phòng máy 1', floor: 'tret', category: 'lab', x: 1270, y: 775, w: 64, h: 98, color: '#fcd34d', fontSize: 12, vertical: true, desc: 'Phòng máy tính 1 (Tầng Trệt - Dãy phải).' },
+          { id: 'p_may_2', name: 'Phòng máy 2', floor: 'tret', category: 'lab', x: 1270, y: 875, w: 64, h: 98, color: '#fcd34d', fontSize: 12, vertical: true, desc: 'Phòng máy tính 2 (Tầng Trệt - Dãy phải).' },
+          { id: 'p_may_3', name: 'Phòng máy 3', floor: 'tret', category: 'lab', x: 1270, y: 975, w: 64, h: 98, color: '#fcd34d', fontSize: 12, vertical: true, desc: 'Phòng máy tính 3 (Tầng Trệt - Dãy phải).' },
+          { id: 'p_bm_tret_1', name: 'Phòng BM', floor: 'tret', category: 'lab', x: 1270, y: 1075, w: 64, h: 75, color: '#fcd34d', fontSize: 12, vertical: true, desc: 'Phòng Bộ môn (Tầng Trệt - Dãy phải).' },
+          { id: 'p_bm_tret_2', name: 'Phòng BM', floor: 'tret', category: 'lab', x: 1270, y: 1152, w: 64, h: 76, color: '#fcd34d', fontSize: 12, vertical: true, desc: 'Phòng Bộ môn (Tầng Trệt - Dãy phải).' },
+
+          { id: 'stair_day_phai', name: 'Cầu thang', floor: 'all', category: 'stair', x: 1138, y: 1230, w: 196, h: 42, color: '#38bdf8', fontSize: 15, desc: 'Cầu thang dãy Thực hành & Bộ môn bên phải.' },
+
+          // 6. KHU HÀNH CHÍNH & THƯ VIỆN
+          { id: 'thu_vien', name: 'Thư Viện', floor: 'tret', category: 'admin', x: 210, y: 1200, w: 220, h: 90, color: '#fde047', fontSize: 19, desc: 'Thư viện trường THPT Chuyên Nguyễn Quang Diêu.' },
+          { id: 'sanh_thu_vien', name: 'Sảnh Thư Viện', floor: 'tret', category: 'admin', x: 210, y: 1292, w: 220, h: 92, color: '#fcd34d', fontSize: 18, desc: 'Sảnh đọc sách & triển lãm trước Thư viện.' },
+
+          { id: 'p_truyen_thong', name: 'Phòng Truyền Thống', floor: 'tret', category: 'admin', x: 432, y: 1232, w: 115, h: 74, color: '#fcd34d', fontSize: 13, desc: 'Phòng Truyền Thống nhà trường.' },
+          { id: 'p_cong_doan', name: 'Công đoàn', floor: 'tret', category: 'admin', x: 549, y: 1232, w: 98, h: 74, color: '#fcd34d', fontSize: 13, desc: 'Văn phòng Công đoàn.' },
+          { id: 'hoi_truong_nho', name: 'Hội trường nhỏ', floor: 'tret', category: 'admin', x: 649, y: 1232, w: 205, h: 74, color: '#38bdf8', fontSize: 16, hasInterior: true, interiorPublic: false, interiorItems: [], desc: 'Hội trường nhỏ — Khu vực họp, hội thảo chuyên đề.' },
+          { id: 'p_hop', name: 'Phòng họp', floor: 'tret', category: 'admin', x: 856, y: 1232, w: 112, h: 74, color: '#26c6da', fontSize: 15, desc: 'Phòng họp hội đồng.' },
+          { id: 'p_kho_hc', name: 'Kho', floor: 'tret', category: 'admin', x: 970, y: 1232, w: 66, h: 74, color: '#26c6da', fontSize: 15, desc: 'Kho hành chính.' },
+
+          { id: 'p_giao_vien', name: 'Phòng Giáo viên', floor: 'tret', category: 'admin', x: 432, y: 1308, w: 115, h: 76, color: '#fde047', fontSize: 13, desc: 'Phòng nghỉ và làm việc của Giáo viên.' },
+          { id: 'p_hieu_pho_1', name: 'Phòng Hiệu phó', floor: 'tret', category: 'admin', x: 549, y: 1308, w: 62, h: 76, color: '#fcd34d', fontSize: 12, desc: 'Phòng Phó Hiệu trưởng.' },
+          { id: 'p_hieu_truong', name: 'Phòng Hiệu trưởng', floor: 'tret', category: 'admin', x: 613, y: 1308, w: 58, h: 76, color: '#fde047', fontSize: 11, desc: 'Phòng Hiệu trưởng.' },
+          { id: 'p_van_phong', name: 'Văn Phòng', floor: 'tret', category: 'admin', x: 673, y: 1308, w: 58, h: 76, color: '#fcd34d', fontSize: 12, desc: 'Văn phòng hành chính nhà trường.' },
+          { id: 'sanh_thong_bao', name: 'Sảnh thông báo', floor: 'tret', category: 'admin', x: 733, y: 1308, w: 88, h: 76, color: '#fde047', fontSize: 13, desc: 'Sảnh thông báo chính diện Tượng Cụ.' },
+          { id: 'vp_doan', name: 'VP Đoàn', floor: 'tret', category: 'admin', x: 823, y: 1308, w: 56, h: 76, color: '#fde047', fontSize: 12, desc: 'Văn phòng Đoàn trường.' },
+          { id: 'p_hieu_pho_2', name: 'Phòng Hiệu phó', floor: 'tret', category: 'admin', x: 881, y: 1308, w: 50, h: 76, color: '#fde047', fontSize: 11, desc: 'Phòng Phó Hiệu trưởng.' },
+          { id: 'p_hoc_vu', name: 'Phòng Học Vụ', floor: 'tret', category: 'admin', x: 933, y: 1308, w: 52, h: 76, color: '#fcd34d', fontSize: 11, desc: 'Phòng Học vụ.' },
+          { id: 'p_ky_thuat', name: 'Phòng kỹ thuật', floor: 'tret', category: 'admin', x: 987, y: 1308, w: 49, h: 76, color: '#fde047', fontSize: 11, desc: 'Phòng Kỹ thuật & Âm thanh ánh sáng.' },
+
+          { id: 'wc_gv2', name: 'WC GV2', floor: 'tret', category: 'wc', x: 1038, y: 1232, w: 34, h: 74, color: '#d8b4fe', fontSize: 11, vertical: true, desc: 'Nhà vệ sinh Giáo viên 2.' },
+          { id: 'wc_gv1', name: 'WC GV1', floor: 'tret', category: 'wc', x: 1038, y: 1308, w: 34, h: 76, color: '#9333ea', fontSize: 11, vertical: true, desc: 'Nhà vệ sinh Giáo viên 1.' }
+        ];
+      }
+
+      function createInitialMasterState() {
+        return {
+          version: 2,
+          passwords: {
+            fullAdmin: 'nqdadmin',
+            adminLite: 'nqdlite'
+          },
+          litePermissions: {
+            canAddBooth: true,
+            canMoveBooth: true,
+            canEditInfo: true,
+            canAssignTags: true
+          },
+          activePublicSheetId: 'sheet_origin',
+          currentViewingSheetId: 'sheet_origin',
+          sheets: [
+            {
+              id: 'sheet_origin',
+              name: '🔒 Map Gốc',
+              lockedOrigin: true,
+              isEvent: false,
+              headerTitle: 'THPT Chuyên Nguyễn Quang Diêu',
+              eventDate: '',
+              customFontUrl: '',
+              customFontFamily: "'Times New Roman', Times, serif",
+              coOrganizers: [
+                { name: 'THPT Chuyên NQD', logoText: 'NQD', logoUrl: '' }
+              ],
+              sponsorTiers: [],
+              eventTags: JSON.parse(JSON.stringify(DEFAULT_EVENT_TAGS)),
+              rooms: createDefaultRooms(),
+              fixedLines: []
+            }
+          ]
+        };
+      }
+
+      let state = loadState();
+      let selectedRoomId = null;
+      let activeFilter = { type: 'all', val: 'all' };
+
+      let panX = 0;
+      let panY = 0;
+      let scale = 0.55;
+      let isDragging = false;
+      let dragStartX = 0;
+      let dragStartY = 0;
+      let initialPinchDist = null;
+      let initialScale = 1;
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && Array.isArray(parsed.sheets) && parsed.sheets.length > 0) {
+              return parsed;
+            }
+          }
+        } catch (e) {
+          console.warn('Khởi tạo lại Map Gốc.', e);
+        }
+        return createInitialMasterState();
+      }
+
+      function saveState() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (e) {
+          console.error('Lỗi lưu dữ liệu:', e);
+        }
+      }
+
+      function getActiveSheet() {
+        const id = state.currentViewingSheetId || state.activePublicSheetId || 'sheet_origin';
+        return state.sheets.find(s => s.id === id) || state.sheets[0];
+      }
+
+      // ================= RENDER HEADER & BỘ LỌC (THU GỌN KHI Ở MAP GỐC) =================
+      function renderHeaderAndFilters() {
+        const sheet = getActiveSheet();
+
+        const fontLink = document.getElementById('custom-font-link');
+        fontLink.href = sheet.customFontUrl ? sheet.customFontUrl : '';
+        document.documentElement.style.setProperty(
+          '--app-font',
+          sheet.customFontFamily || "'Times New Roman', Times, serif"
+        );
+
+        document.getElementById('header-title').textContent =
+          sheet.headerTitle || 'THPT Chuyên Nguyễn Quang Diêu';
+
+        const metaEl = document.getElementById('header-event-meta');
+        if (sheet.isEvent && sheet.eventDate) {
+          metaEl.style.display = 'block';
+          metaEl.textContent = '📅 Ngày diễn ra: ' + sheet.eventDate;
+        } else {
+          metaEl.style.display = 'none';
+        }
+
+        const logoContainer = document.getElementById('header-logos');
+        logoContainer.innerHTML = '';
+        const logos = (sheet.coOrganizers && sheet.coOrganizers.length > 0)
+          ? sheet.coOrganizers
+          : [{ name: 'THPT Chuyên NQD', logoText: 'NQD', logoUrl: '' }];
+
+        logos.forEach(org => {
+          const badge = document.createElement('div');
+          badge.className = 'logo-badge';
+          badge.title = org.name || '';
+          if (org.logoUrl) {
+            badge.innerHTML = `<img src="${org.logoUrl}" alt="${org.name || 'Logo'}" />`;
+          } else {
+            badge.textContent = org.logoText || 'NQD';
+          }
+          logoContainer.appendChild(badge);
+        });
+
+        const sponsorBtn = document.getElementById('btn-open-sponsors');
+        if (sheet.isEvent || (sheet.sponsorTiers && sheet.sponsorTiers.length > 0)) {
+          sponsorBtn.style.display = 'inline-flex';
+        } else {
+          sponsorBtn.style.display = 'none';
+        }
+
+        // THU GỌN BỘ LỌC: Nếu đang ở Map Gốc (!sheet.isEvent) thì ẩn hoàn toàn các bộ lọc sự kiện
+        const tagContainer = document.getElementById('event-filter-chips');
+        const tagDivider = document.getElementById('event-filter-divider');
+        tagContainer.innerHTML = '';
+
+        if (sheet.isEvent) {
+          tagDivider.style.display = 'block';
+          tagContainer.style.display = 'flex';
+          const tags = sheet.eventTags || DEFAULT_EVENT_TAGS;
+          tags.forEach(tag => {
+            const btn = document.createElement('button');
+            btn.className = 'filter-chip event-tag-chip';
+            if (activeFilter.type === 'tag' && activeFilter.val === tag.id) {
+              btn.classList.add('active');
+            }
+            btn.textContent = tag.label;
+            btn.onclick = () => applyFilter('tag', tag.id, btn);
+            tagContainer.appendChild(btn);
+          });
+        } else {
+          tagDivider.style.display = 'none';
+          tagContainer.style.display = 'none';
+        }
+      }
+
+      // ================= RENDER MẶT BẰNG SƠ ĐỒ TRƯỜNG =================
+      function renderBaseSurfaces() {
+        const container = document.getElementById('map-base-surfaces');
+        container.innerHTML = '';
+
+        BASE_SURFACES.forEach(s => {
+          const div = document.createElement('div');
+          div.style.left = s.x + 'px';
+          div.style.top = s.y + 'px';
+          div.style.width = s.w + 'px';
+          div.style.height = s.h + 'px';
+
+          if (s.type === 'courtyard') {
+            div.className = 'courtyard-surface';
+          } else if (s.type === 'corridor') {
+            div.className = 'corridor-surface' + (s.vertical ? ' vertical-text' : '');
+            if (s.text) div.innerHTML = `<span>${s.text}</span>`;
+          } else if (s.type === 'floor_hdr') {
+            div.className = 'floor-header-badge';
+            div.textContent = s.text;
+          } else if (s.type === 'label') {
+            div.className = 'map-label-static';
+            div.style.fontSize = (s.fontSize || 14) + 'px';
+            div.textContent = s.text;
+          }
+          container.appendChild(div);
+        });
+      }
+
+      function renderFixedLandmarks() {
+        const layer = document.getElementById('map-landmarks-layer');
+        layer.innerHTML = '';
+
+        FIXED_LANDMARKS.forEach(lm => {
+          const el = document.createElement('div');
+          el.className = 'fixed-landmark';
+          el.id = 'room-el-' + lm.id;
+          el.style.left = lm.x + 'px';
+          el.style.top = lm.y + 'px';
+          el.style.width = lm.w + 'px';
+          el.style.height = lm.h + 'px';
+
+          if (lm.id === 'landmark_cong_chinh') {
+            el.innerHTML = `
+              <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:space-between;">
+                <span style="font-size:15px;margin-right:6px;">Cổng</span>
+                <div style="flex:1;height:28px;background:#fcd34d;border:2px solid #d97706;"></div>
+                <div style="width:36px;height:44px;background:#fde68a;border:2px solid #f59e0b;"></div>
+              </div>
+            `;
+          } else if (lm.id === 'landmark_tuong_cu') {
+            el.innerHTML = `
+              <div style="display:flex;align-items:center;gap:6px;white-space:nowrap;">
+                <div style="width:38px;height:38px;border-radius:50%;background:#29b6f6;border:2.5px solid #0284c7;box-shadow:0 2px 6px rgba(0,0,0,0.2);"></div>
+                <span style="font-size:14px;">Tượng Cụ</span>
+              </div>
+            `;
+          } else if (lm.id === 'landmark_cot_co') {
+            el.innerHTML = `
+              <svg width="80" height="170" viewBox="0 0 80 170">
+                <ellipse cx="32" cy="152" rx="12" ry="5" fill="#94a3b8" stroke="#475569" stroke-width="1.5"/>
+                <line x1="32" y1="20" x2="32" y2="152" stroke="#475569" stroke-width="3.5"/>
+                <path d="M33 22 C 48 18, 60 30, 74 26 L 72 56 C 58 60, 46 48, 33 52 Z" fill="#dc2626"/>
+                <polygon points="53,31 55,37 61,37 56,41 58,47 53,43 48,47 50,41 45,37 51,37" fill="#fde047"/>
+              </svg>
+            `;
+          }
+
+          el.onclick = (e) => {
+            e.stopPropagation();
+            selectRoomOnMap(lm.id);
+          };
+          layer.appendChild(el);
+        });
+      }
+
+      function renderRooms() {
+        const sheet = getActiveSheet();
+        const layer = document.getElementById('map-rooms-layer');
+        layer.innerHTML = '';
+
+        const tagMap = {};
+        (sheet.eventTags || DEFAULT_EVENT_TAGS).forEach(t => {
+          tagMap[t.id] = t.label.split(' ')[0];
+        });
+
+        sheet.rooms.forEach(room => {
+          const div = document.createElement('div');
+          div.className = 'map-room' + (room.vertical ? ' vertical-label' : '');
+          div.id = 'room-el-' + room.id;
+          div.style.left = room.x + 'px';
+          div.style.top = room.y + 'px';
+          div.style.width = room.w + 'px';
+          div.style.height = room.h + 'px';
+          div.style.backgroundColor = room.color || '#26c6da';
+          div.style.fontSize = (room.fontSize || 13) + 'px';
+
+          if (selectedRoomId === room.id) {
+            div.classList.add('selected-room');
+          }
+
+          if (activeFilter.type !== 'all') {
+            const matched = isRoomMatchingFilter(room, activeFilter);
+            if (matched) {
+              div.classList.add('filtered-active');
+            } else {
+              div.classList.add('filtered-dim');
+            }
+          }
+
+          if (room.hasInterior && room.interiorPublic && Array.isArray(room.interiorItems) && room.interiorItems.length > 0) {
+            const subgrid = document.createElement('div');
+            subgrid.className = 'interior-subgrid';
+            room.interiorItems.forEach(sub => {
+              const itemEl = document.createElement('div');
+              itemEl.className = 'interior-item';
+              itemEl.id = 'room-el-' + sub.id;
+              itemEl.style.left = sub.rx + '%';
+              itemEl.style.top = sub.ry + '%';
+              itemEl.style.width = sub.rw + '%';
+              itemEl.style.height = sub.rh + '%';
+              itemEl.style.backgroundColor = sub.color || '#fde047';
+              itemEl.textContent = sub.name;
+              itemEl.onclick = (ev) => {
+                ev.stopPropagation();
+                selectRoomOnMap(sub.id, room.id);
+              };
+              subgrid.appendChild(itemEl);
+            });
+            div.appendChild(subgrid);
+          } else {
+            const titleSpan = document.createElement('span');
+            titleSpan.className = 'room-title';
+            titleSpan.textContent = room.name;
+            div.appendChild(titleSpan);
+
+            if (room.underMaintenance) {
+              const mBadge = document.createElement('span');
+              mBadge.className = 'room-maint-badge';
+              mBadge.textContent = 'Đang sửa';
+              div.appendChild(mBadge);
+            } else if (sheet.isEvent && Array.isArray(room.tags) && room.tags.length > 0) {
+              const icons = room.tags.map(tid => tagMap[tid] || '⭐').join('');
+              const tSpan = document.createElement('span');
+              tSpan.className = 'room-tag-icons';
+              tSpan.textContent = icons;
+              div.appendChild(tSpan);
+            }
+          }
+
+          div.onclick = (e) => {
+            e.stopPropagation();
+            selectRoomOnMap(room.id);
+          };
+
+          layer.appendChild(div);
+        });
+      }
+
+      // Kiểm tra khớp Bộ lọc (Bổ sung nhóm 'outer' = Ngoại vi gồm Sân bóng, Vườn rau, Nhà xe, Căn tin, Hội trường lớn, Nhà thi đấu, KTX)
+      function isRoomMatchingFilter(room, filter) {
+        if (filter.type === 'all') return true;
+        if (filter.type === 'floor') {
+          return room.floor === filter.val || room.floor === 'all';
+        }
+        if (filter.type === 'category') {
+          if (filter.val === 'outer') {
+            return room.category === 'facility' || room.category === 'dorm';
+          }
+          return room.category === filter.val;
+        }
+        if (filter.type === 'tag') {
+          return Array.isArray(room.tags) && room.tags.includes(filter.val);
+        }
+        return true;
+      }
+
+      function findRoomById(roomId) {
+        const fixed = FIXED_LANDMARKS.find(l => l.id === roomId);
+        if (fixed) return fixed;
+
+        const sheet = getActiveSheet();
+        for (const r of sheet.rooms) {
+          if (r.id === roomId) return r;
+          if (r.hasInterior && Array.isArray(r.interiorItems)) {
+            const sub = r.interiorItems.find(i => i.id === roomId);
+            if (sub) {
+              return {
+                ...sub,
+                parentRoomId: r.id,
+                parentRoomName: r.name,
+                floor: r.floor
+              };
+            }
+          }
+        }
+        return null;
+      }
+
+      function selectRoomOnMap(roomId) {
+        selectedRoomId = roomId;
+        document.querySelectorAll('.map-room, .interior-item').forEach(el => {
+          el.classList.remove('selected-room');
+        });
+        const targetEl = document.getElementById('room-el-' + roomId);
+        if (targetEl) {
+          targetEl.classList.add('selected-room');
+        }
+
+        const room = findRoomById(roomId);
+        const bar = document.getElementById('selected-room-bar');
+        if (room) {
+          document.getElementById('hud-room-name').textContent = room.name;
+          bar.style.display = 'flex';
+        } else {
+          bar.style.display = 'none';
+        }
+
+        if (window.NQDAdminEngine && typeof window.NQDAdminEngine.onRoomSelected === 'function') {
+          window.NQDAdminEngine.onRoomSelected(room);
+        }
+      }
+
+      function openSelectedRoomModal() {
+        if (!selectedRoomId) return;
+        const room = findRoomById(selectedRoomId);
+        if (!room) return;
+
+        const sheet = getActiveSheet();
+        document.getElementById('modal-room-title').textContent = room.name;
+
+        const tagsRow = document.getElementById('modal-tags-row');
+        tagsRow.innerHTML = '';
+
+        const imgWrap = document.getElementById('modal-img-wrap');
+        const imgEl = document.getElementById('modal-img');
+        const descEl = document.getElementById('modal-desc');
+
+        if (room.underMaintenance) {
+          imgWrap.style.display = 'none';
+          const badge = document.createElement('span');
+          badge.className = 'modal-badge';
+          badge.style.background = '#dc2626';
+          badge.style.color = '#fff';
+          badge.textContent = '🔧 Đang sửa';
+          tagsRow.appendChild(badge);
+          descEl.textContent = 'Đang cập nhật';
+        } else {
+          const floorNames = { tret: 'Tầng Trệt', lau1: 'Lầu 1', lau2: 'Lầu 2', all: 'Tất cả các tầng' };
+          const fBadge = document.createElement('span');
+          fBadge.className = 'modal-badge';
+          fBadge.textContent = floorNames[room.floor] || 'Tầng Trệt';
+          tagsRow.appendChild(fBadge);
+
+          if (Array.isArray(room.tags) && room.tags.length > 0) {
+            const allTags = sheet.eventTags || DEFAULT_EVENT_TAGS;
+            room.tags.forEach(tid => {
+              const tObj = allTags.find(x => x.id === tid);
+              if (tObj) {
+                const sBadge = document.createElement('span');
+                sBadge.className = 'modal-badge special-tag';
+                sBadge.textContent = tObj.label;
+                tagsRow.appendChild(sBadge);
+              }
+            });
+          }
+
+          if (room.imageUrl && room.imageUrl.trim() !== '') {
+            imgEl.src = room.imageUrl;
+            imgWrap.style.display = 'block';
+          } else {
+            imgEl.src = '';
+            imgWrap.style.display = 'none';
+          }
+
+          descEl.textContent = room.desc || 'Không có mô tả thêm.';
+
+          if (room.hasInterior && !room.interiorPublic && Array.isArray(room.interiorItems) && room.interiorItems.length > 0) {
+            const previewBtn = document.createElement('button');
+            previewBtn.className = 'hud-action-btn';
+            previewBtn.style.background = '#0284c7';
+            previewBtn.style.color = '#fff';
+            previewBtn.style.marginTop = '6px';
+            previewBtn.textContent = '🏛️ Xem bố cục nội thất bên trong';
+            previewBtn.onclick = () => {
+              room.interiorPublic = true;
+              renderRooms();
+              closeRoomModal();
+            };
+            descEl.appendChild(document.createElement('br'));
+            descEl.appendChild(previewBtn);
+          }
+        }
+
+        document.getElementById('info-modal-backdrop').style.display = 'flex';
+      }
+
+      function closeRoomModal() {
+        document.getElementById('info-modal-backdrop').style.display = 'none';
+      }
+
+      function openLightbox() {
+        const src = document.getElementById('modal-img').src;
+        if (!src) return;
+        document.getElementById('lightbox-img').src = src;
+        document.getElementById('lightbox-backdrop').style.display = 'flex';
+      }
+
+      function closeLightbox() {
+        document.getElementById('lightbox-backdrop').style.display = 'none';
+      }
+
+      function openSponsorsModal() {
+        const sheet = getActiveSheet();
+        const container = document.getElementById('sponsors-content-area');
+        container.innerHTML = '';
+
+        const tiers = sheet.sponsorTiers || [];
+        if (tiers.length === 0) {
+          container.innerHTML = `<p style="text-align:center;color:#64748b;padding:24px;">Hiện chưa có thông tin nhà tài trợ cho sự kiện này.</p>`;
+        } else {
+          tiers.forEach(tier => {
+            const sec = document.createElement('div');
+            sec.className = 'sponsor-tier-section';
+            sec.innerHTML = `<div class="sponsor-tier-title">${tier.tierName || 'Nhà Tài Trợ'}</div>`;
+
+            const grid = document.createElement('div');
+            grid.className = 'sponsor-grid';
+
+            (tier.items || []).forEach(sp => {
+              const card = document.createElement(sp.linkUrl ? 'a' : 'div');
+              card.className = 'sponsor-card';
+              if (sp.linkUrl) {
+                card.href = sp.linkUrl;
+                card.target = '_blank';
+                card.rel = 'noopener noreferrer';
+              }
+              const logoHtml = sp.logoUrl
+                ? `<img src="${sp.logoUrl}" alt="${sp.name}" />`
+                : `<div class="logo-badge" style="width:52px;height:52px;">🤝</div>`;
+              card.innerHTML = `
+                ${logoHtml}
+                <div class="sponsor-card-name">${sp.name || 'Nhà tài trợ'}</div>
+              `;
+              grid.appendChild(card);
+            });
+
+            sec.appendChild(grid);
+            container.appendChild(sec);
+          });
+        }
+
+        document.getElementById('sponsors-drawer-backdrop').style.display = 'flex';
+      }
+
+      function closeSponsorsModal() {
+        document.getElementById('sponsors-drawer-backdrop').style.display = 'none';
+      }
+
+      function applyFilter(type, val, btnEl) {
+        activeFilter = { type, val };
+        document.querySelectorAll('#filter-chips-container .filter-chip').forEach(b => {
+          b.classList.remove('active');
+        });
+        if (btnEl) btnEl.classList.add('active');
+        renderRooms();
+      }
+
+      function setupSearchBox() {
+        const input = document.getElementById('search-input');
+        const clearBtn = document.getElementById('search-clear');
+        const suggBox = document.getElementById('search-suggestions');
+
+        input.addEventListener('input', () => {
+          const q = input.value.trim().toLowerCase();
+          clearBtn.style.display = q ? 'block' : 'none';
+          if (!q) {
+            suggBox.style.display = 'none';
+            return;
+          }
+
+          const sheet = getActiveSheet();
+          const allTargets = [...FIXED_LANDMARKS, ...sheet.rooms];
+          const matches = allTargets.filter(r => r.name.toLowerCase().includes(q)).slice(0, 8);
+
+          suggBox.innerHTML = '';
+          if (matches.length === 0) {
+            suggBox.innerHTML = `<div class="suggestion-item" style="color:#94a3b8;">Không tìm thấy phòng phù hợp</div>`;
+          } else {
+            matches.forEach(m => {
+              const item = document.createElement('div');
+              item.className = 'suggestion-item';
+              const floorLabel = { tret: 'Trệt', lau1: 'Lầu 1', lau2: 'Lầu 2', all: 'Chung' }[m.floor] || '';
+              item.innerHTML = `<span><strong>${m.name}</strong></span><span style="font-size:12px;color:#38bdf8;">${floorLabel}</span>`;
+              item.onclick = () => {
+                suggBox.style.display = 'none';
+                input.value = m.name;
+                focusOnRoom(m.id);
+                selectRoomOnMap(m.id);
+              };
+              suggBox.appendChild(item);
+            });
+          }
+          suggBox.style.display = 'block';
+        });
+      }
+
+      function clearSearch() {
+        const input = document.getElementById('search-input');
+        input.value = '';
+        document.getElementById('search-clear').style.display = 'none';
+        document.getElementById('search-suggestions').style.display = 'none';
+      }
+
+      function applyTransform() {
+        const canvas = document.getElementById('map-canvas');
+        canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+      }
+
+      function zoomBy(factor, clientX, clientY) {
+        const viewport = document.getElementById('map-viewport');
+        const rect = viewport.getBoundingClientRect();
+        const cx = clientX !== undefined ? clientX - rect.left : rect.width / 2;
+        const cy = clientY !== undefined ? clientY - rect.top : rect.height / 2;
+
+        const newScale = Math.min(2.4, Math.max(0.22, scale * factor));
+        const ratio = newScale / scale;
+
+        panX = cx - (cx - panX) * ratio;
+        panY = cy - (cy - panY) * ratio;
+        scale = newScale;
+        applyTransform();
+      }
+
+      function centerOnPoint(mapX, mapY, targetScale) {
+        const viewport = document.getElementById('map-viewport');
+        const rect = viewport.getBoundingClientRect();
+        if (targetScale) scale = targetScale;
+        panX = rect.width / 2 - mapX * scale;
+        panY = rect.height / 2 - mapY * scale;
+        applyTransform();
+      }
+
+      function centerOnFlagpole() {
+        const fitScale = Math.min(window.innerWidth / 1550, (window.innerHeight - 130) / 1450);
+        centerOnPoint(775, 860, Math.max(0.28, Math.min(0.75, fitScale)));
+      }
+
+      function focusOnRoom(roomId) {
+        const r = findRoomById(roomId);
+        if (!r) return;
+        const cx = (r.x || 750) + (r.w || 60) / 2;
+        const cy = (r.y || 800) + (r.h || 60) / 2;
+        centerOnPoint(cx, cy, Math.max(scale, 0.75));
+      }
+
+      function setupViewportGestures() {
+        const vp = document.getElementById('map-viewport');
+
+        vp.addEventListener('mousedown', (e) => {
+          if (e.target.closest('#bottom-hud')) return;
+          isDragging = true;
+          dragStartX = e.clientX - panX;
+          dragStartY = e.clientY - panY;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+          if (!isDragging) return;
+          panX = e.clientX - dragStartX;
+          panY = e.clientY - dragStartY;
+          applyTransform();
+        });
+
+        window.addEventListener('mouseup', () => {
+          isDragging = false;
+        });
+
+        vp.addEventListener('wheel', (e) => {
+          e.preventDefault();
+          const factor = e.deltaY < 0 ? 1.12 : 0.89;
+          zoomBy(factor, e.clientX, e.clientY);
+        }, { passive: false });
+
+        vp.addEventListener('touchstart', (e) => {
+          if (e.target.closest('#bottom-hud')) return;
+          if (e.touches.length === 1) {
+            isDragging = true;
+            dragStartX = e.touches[0].clientX - panX;
+            dragStartY = e.touches[0].clientY - panY;
+          } else if (e.touches.length === 2) {
+            isDragging = false;
+            initialPinchDist = Math.hypot(
+              e.touches[0].clientX - e.touches[1].clientX,
+              e.touches[0].clientY - e.touches[1].clientY
+            );
+            initialScale = scale;
+          }
+        }, { passive: true });
+
+        vp.addEventListener('touchmove', (e) => {
+          if (e.touches.length === 1 && isDragging) {
+            panX = e.touches[0].clientX - dragStartX;
+            panY = e.touches[0].clientY - dragStartY;
+            applyTransform();
+          } else if (e.touches.length === 2 && initialPinchDist) {
+            const dist = Math.hypot(
+              e.touches[0].clientX - e.touches[1].clientX,
+              e.touches[0].clientY - e.touches[1].clientY
+            );
+            const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+            const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+            const targetScale = Math.min(2.4, Math.max(0.22, initialScale * (dist / initialPinchDist)));
+            zoomBy(targetScale / scale, midX, midY);
+          }
+        }, { passive: true });
+
+        vp.addEventListener('touchend', () => {
+          isDragging = false;
+          initialPinchDist = null;
+        });
+
+        vp.addEventListener('click', (e) => {
+          if (e.target.id === 'map-viewport' || e.target.id === 'map-canvas' || e.target.classList.contains('courtyard-surface')) {
+            selectedRoomId = null;
+            document.querySelectorAll('.map-room, .interior-item').forEach(el => el.classList.remove('selected-room'));
+            document.getElementById('selected-room-bar').style.display = 'none';
+          }
+        });
+      }
+
+      function setWebBackground(colorHex) {
+        document.documentElement.style.setProperty('--bg-web', colorHex);
+      }
+
+      function requestRoutePoint(role) {
+        if (!selectedRoomId) return;
+        if (window.NQDRoutingEngine && typeof window.NQDRoutingEngine.setPointFromApp === 'function') {
+          window.NQDRoutingEngine.setPointFromApp(role, selectedRoomId);
+        } else {
+          alert('Tính năng Line chỉ đường & QR 20m sẽ tự động kích hoạt ngay khi bạn thêm file routing.js (Chặng 2) vào thư mục!');
+        }
+      }
+
+      function triggerAdminLogin() {
+        if (window.NQDAdminEngine && typeof window.NQDAdminEngine.openLoginPrompt === 'function') {
+          window.NQDAdminEngine.openLoginPrompt();
+        } else {
+          alert('Bảng Quản trị 2 cấp (Full Admin & Admin Lite) sẽ tự động kích hoạt ngay khi bạn thêm file admin.js (Chặng 3) vào thư mục!');
+        }
+      }
+
+      function refreshAll() {
+        renderHeaderAndFilters();
+        renderBaseSurfaces();
+        renderFixedLandmarks();
+        renderRooms();
+        if (window.NQDRoutingEngine && typeof window.NQDRoutingEngine.redraw === 'function') {
+          window.NQDRoutingEngine.redraw();
+        }
+      }
+
+      function init() {
+        refreshAll();
+        setupSearchBox();
+        setupViewportGestures();
+        setTimeout(centerOnFlagpole, 60);
+      }
+
+      window.addEventListener('DOMContentLoaded', init);
+
+      return {
+        getState: () => state,
+        saveState,
+        getActiveSheet,
+        getFixedLandmarks: () => FIXED_LANDMARKS,
+        findRoomById,
+        selectRoomOnMap,
+        focusOnRoom,
+        openSelectedRoomModal,
+        closeRoomModal,
+        openLightbox,
+        closeLightbox,
+        openSponsorsModal,
+        closeSponsorsModal,
+        applyFilter,
+        clearSearch,
+        zoomBy,
+        centerOnFlagpole,
+        setWebBackground,
+        requestRoutePoint,
+        triggerAdminLogin,
+        refreshAll,
+        resetMasterDefault: () => {
+          state = createInitialMasterState();
+          saveState();
+          refreshAll();
+        }
+      };
+    })();
+  </script>
+
+  <!-- CỔNG CHỜ TỰ ĐỘNG NHẬN CHẶNG 2 (routing.js) VÀ CHẶNG 3 (admin.js) TRONG CÙNG THƯ MỤC -->
+  <script src="routing.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
