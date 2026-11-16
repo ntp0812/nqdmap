@@ -1,52 +1,160 @@
 /**
  * HỆ THỐNG BẢN ĐỒ SỐ THPT CHUYÊN NGUYỄN QUANG DIÊU
- * Chặng 3 (admin.js):
- * - Quản trị 2 cấp: Full Admin (FA) & Admin Lite (AL) + Đổi mật khẩu cả 2 loại (C4, E3)
- * - Giao diện máy tính chia tỷ lệ 6/4 (E1) + Thanh Sheet như Excel (C1, C2)
- * - Thiết kế bố cục nội thất bên trong phòng lớn & bật/tắt Public lên Map (C3, E2, D4)
- * - Đổi Header, Font chữ sự kiện (Halloween...), Logo đồng tổ chức & Trang kéo Nhà tài trợ (A1, A5a, E4, F2)
- * - Kéo thả phòng/gian hàng trực tiếp trên Map + Xuất File HTML Gộp cho Điện thoại/Zalo
+ * Chặng 3 + Cloud Sync (admin.js):
+ * - Tự động đồng bộ thời gian thực từ máy tính Admin sang toàn bộ Điện thoại khách qua Firebase Cloud
  */
 
 window.NQDAdminEngine = (function () {
-  let currentRole = null; // null | 'FA' (Full Admin) | 'AL' (Admin Lite)
-  let activeTab = 'tab_room'; // 'tab_room' | 'tab_event' | 'tab_sponsors' | 'tab_security'
+  // 👉 DÁN LINK FIREBASE REALTIME DATABASE CỦA BẠN VÀO GIỮA 2 DẤU NHÁY ĐƠN Ở DÒNG DƯỚI ĐÂY:
+  const DEFAULT_FIREBASE_URL = 'https://nqd-map-default-rtdb.firebaseio.com';
+
+  const CLOUD_URL_STORAGE_KEY = 'NQD_FIREBASE_DB_URL';
+  let currentRole = null; // null | 'FA' | 'AL'
+  let activeTab = 'tab_room';
   let dragMapEnabled = false;
   let draggingRoom = null;
   let dragOffsetX = 0;
   let dragOffsetY = 0;
   let interiorEditingRoomId = null;
 
-  // Danh sách gợi ý Font chữ sự kiện nhanh (A1: Halloween, Khoa học, Lễ hội...)
+  let cloudSyncTimer = null;
+  let lastCloudUpdatedAt = 0;
+  let cloudStatusText = 'Chưa nối Cloud';
+
   const FONT_PRESETS = [
-    {
-      name: 'Mặc định (Times New Roman)',
-      url: '',
-      family: "'Times New Roman', Times, serif"
-    },
-    {
-      name: '🎃 Halloween Kinh Dị (Creepster)',
-      url: 'https://fonts.googleapis.com/css2?family=Creepster&family=Nosifer&display=swap',
-      family: "'Creepster', cursive, serif"
-    },
-    {
-      name: '👻 Ma Quái Cổ Điển (Nosifer)',
-      url: 'https://fonts.googleapis.com/css2?family=Nosifer&display=swap',
-      family: "'Nosifer', cursive, serif"
-    },
-    {
-      name: '🚀 Khoa Học Hiện Đại (Montserrat)',
-      url: 'https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&display=swap',
-      family: "'Montserrat', sans-serif"
-    },
-    {
-      name: '🎓 Trang Trọng Nhà Trường (Merriweather)',
-      url: 'https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap',
-      family: "'Merriweather', serif"
-    }
+    { name: 'Mặc định (Times New Roman)', url: '', family: "'Times New Roman', Times, serif" },
+    { name: '🎃 Halloween Kinh Dị (Creepster)', url: 'https://fonts.googleapis.com/css2?family=Creepster&family=Nosifer&display=swap', family: "'Creepster', cursive, serif" },
+    { name: '👻 Ma Quái Cổ Điển (Nosifer)', url: 'https://fonts.googleapis.com/css2?family=Nosifer&display=swap', family: "'Nosifer', cursive, serif" },
+    { name: '🚀 Khoa Học Hiện Đại (Montserrat)', url: 'https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&display=swap', family: "'Montserrat', sans-serif" },
+    { name: '🎓 Trang Trọng Nhà Trường (Merriweather)', url: 'https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap', family: "'Merriweather', serif" }
   ];
 
-  // ================= 1. NHÚNG CSS GIAO DIỆN ADMIN 6/4 & THANH SHEET EXCEL =================
+  // ================= 1. HỆ THỐNG ĐỒNG BỘ ĐÁM MÂY (FIREBASE REST SYNC) =================
+  function getCleanFirebaseUrl() {
+    let raw = (DEFAULT_FIREBASE_URL || localStorage.getItem(CLOUD_URL_STORAGE_KEY) || '').trim();
+    if (!raw) return '';
+    raw = raw.replace(/\/+$/, '');
+    if (raw.endsWith('.json')) {
+      raw = raw.substring(0, raw.lastIndexOf('/'));
+    }
+    return raw;
+  }
+
+  function updateCloudBadgeUI(text, color) {
+    cloudStatusText = text;
+    const badge = document.getElementById('adm-cloud-status-pill');
+    if (badge) {
+      badge.textContent = text;
+      badge.style.background = color || '#334155';
+    }
+  }
+
+  // Đẩy toàn bộ dữ liệu từ máy Admin lên Đám mây
+  async function pushStateToCloud(showAlertOnSuccess) {
+    const baseUrl = getCleanFirebaseUrl();
+    if (!baseUrl) {
+      if (showAlertOnSuccess) {
+        alert('Bạn chưa nhập Link Firebase Realtime Database! Hãy vào tab "🔐 Mật khẩu & Quyền AL" để dán link Firebase.');
+      }
+      return;
+    }
+
+    try {
+      updateCloudBadgeUI('⏳ Đang đồng bộ Cloud...', '#d97706');
+      const state = window.NQDMapApp.getState();
+      state.updatedAt = Date.now();
+      lastCloudUpdatedAt = state.updatedAt;
+      window.NQDMapApp.saveState();
+
+      const res = await fetch(`${baseUrl}/nqd_map_master.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(state)
+      });
+
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      updateCloudBadgeUI('☁️ Đã đồng bộ Cloud', '#059669');
+      if (showAlertOnSuccess) {
+        alert('✅ Đã đẩy toàn bộ bản đồ lên Đám mây thành công! Mọi điện thoại mở link web đều đã được cập nhật.');
+      }
+    } catch (err) {
+      console.error('Lỗi đẩy Cloud:', err);
+      updateCloudBadgeUI('❌ Lỗi Cloud (Kiểm tra Test Mode)', '#dc2626');
+      if (showAlertOnSuccess) {
+        alert('❌ Không thể ghi lên Firebase! Bạn hãy kiểm tra lại:\n1. Link Firebase đã đúng chưa.\n2. Trong Firebase Realtime Database -> mục Rules đã bật ".read": true, ".write": true (Test mode) chưa.');
+      }
+    }
+  }
+
+  // Tự động đẩy lên Cloud sau 700ms mỗi khi Admin chỉnh sửa
+  function scheduleAutoCloudPush() {
+    if (!currentRole || !getCleanFirebaseUrl()) return;
+    updateCloudBadgeUI('⏳ Đang lưu...', '#d97706');
+    if (cloudSyncTimer) clearTimeout(cloudSyncTimer);
+    cloudSyncTimer = setTimeout(() => {
+      pushStateToCloud(false);
+    }, 700);
+  }
+
+  // Tải dữ liệu mới nhất từ Đám mây về Điện thoại của khách (hoặc máy tính)
+  async function pullStateFromCloud(isSilentPolling) {
+    const baseUrl = getCleanFirebaseUrl();
+    if (!baseUrl) return;
+    // Khi Admin đang gõ/kéo thả thì không tự ghi đè ngược
+    if (isSilentPolling && currentRole) return;
+
+    try {
+      const res = await fetch(`${baseUrl}/nqd_map_master.json?t=${Date.now()}`, {
+        cache: 'no-store'
+      });
+      if (!res.ok) return;
+      const cloudData = await res.json();
+      if (!cloudData || !Array.isArray(cloudData.sheets) || cloudData.sheets.length === 0) return;
+
+      if (isSilentPolling && cloudData.updatedAt && cloudData.updatedAt === lastCloudUpdatedAt) {
+        return; // Chưa có thay đổi mới
+      }
+
+      lastCloudUpdatedAt = cloudData.updatedAt || Date.now();
+      const appState = window.NQDMapApp.getState();
+
+      // Cập nhật trực tiếp vào bộ nhớ của ứng dụng
+      Object.keys(cloudData).forEach(k => {
+        appState[k] = cloudData[k];
+      });
+
+      // Nếu là Khách xem trên điện thoại, luôn mở đúng Sheet được đặt là Public
+      if (!currentRole && appState.activePublicSheetId) {
+        appState.currentViewingSheetId = appState.activePublicSheetId;
+      }
+
+      window.NQDMapApp.saveState();
+      window.NQDMapApp.refreshAll();
+      updateCloudBadgeUI('☁️ Đã đồng bộ Cloud', '#059669');
+      if (currentRole) {
+        renderExcelSheetBar();
+      }
+    } catch (err) {
+      if (!isSilentPolling) {
+        console.warn('Chưa tải được dữ liệu Cloud:', err);
+      }
+    }
+  }
+
+  function saveFirebaseUrlFromInput() {
+    const inp = document.getElementById('adm-firebase-url-input');
+    if (!inp) return;
+    const val = inp.value.trim();
+    localStorage.setItem(CLOUD_URL_STORAGE_KEY, val);
+    if (val) {
+      pushStateToCloud(true);
+    } else {
+      updateCloudBadgeUI('Chưa nối Cloud', '#475569');
+      alert('Đã xóa liên kết Cloud trên trình duyệt này.');
+    }
+  }
+
+  // ================= 2. CSS GIAO DIỆN ADMIN 6/4 & THANH SHEET EXCEL =================
   function injectAdminStyles() {
     if (document.getElementById('nqd-admin-styles')) return;
     const style = document.createElement('style');
@@ -63,7 +171,6 @@ window.NQDAdminEngine = (function () {
       body.admin-split-mode #admin-panel-container {
         display: flex !important;
       }
-
       .adm-top-bar {
         background: #0f172a;
         color: #ffffff;
@@ -76,9 +183,9 @@ window.NQDAdminEngine = (function () {
         flex-shrink: 0;
       }
       .adm-role-badge {
-        font-size: 13px;
+        font-size: 12.5px;
         font-weight: bold;
-        padding: 4px 10px;
+        padding: 4px 9px;
         border-radius: 6px;
         background: #f59e0b;
         color: #0f172a;
@@ -87,7 +194,16 @@ window.NQDAdminEngine = (function () {
         background: #10b981;
         color: #ffffff;
       }
-
+      #adm-cloud-status-pill {
+        font-size: 11px;
+        font-weight: bold;
+        padding: 3px 8px;
+        border-radius: 999px;
+        background: #334155;
+        color: #ffffff;
+        display: inline-block;
+        margin-left: 6px;
+      }
       .adm-nav-tabs {
         display: flex;
         background: #1e293b;
@@ -111,7 +227,6 @@ window.NQDAdminEngine = (function () {
         background: #f8fafc;
         color: #0f172a;
       }
-
       .adm-content-scroll {
         flex: 1;
         overflow-y: auto;
@@ -120,7 +235,6 @@ window.NQDAdminEngine = (function () {
         flex-direction: column;
         gap: 14px;
       }
-
       .adm-card {
         background: #ffffff;
         border: 1.5px solid #cbd5e1;
@@ -141,7 +255,6 @@ window.NQDAdminEngine = (function () {
         align-items: center;
         justify-content: space-between;
       }
-
       .adm-field {
         display: flex;
         flex-direction: column;
@@ -175,7 +288,6 @@ window.NQDAdminEngine = (function () {
         grid-template-columns: repeat(4, 1fr);
         gap: 6px;
       }
-
       .adm-btn {
         font-size: 12.5px;
         font-weight: bold;
@@ -196,7 +308,6 @@ window.NQDAdminEngine = (function () {
       .adm-btn-warn { background: #f59e0b; color: #0f172a; }
       .adm-btn-danger { background: #dc2626; color: #fff; }
       .adm-btn-outline { background: #f1f5f9; color: #0f172a; border-color: #94a3b8; }
-
       .adm-switch-row {
         display: flex;
         align-items: center;
@@ -208,8 +319,6 @@ window.NQDAdminEngine = (function () {
         font-size: 13px;
         font-weight: 600;
       }
-
-      /* THANH SHEET NHƯ EXCEL Ở ĐÁY BẢN ĐỒ (C1, C2) */
       #excel-sheet-bar {
         background: #0f172a;
         border-top: 2px solid #38bdf8;
@@ -250,8 +359,6 @@ window.NQDAdminEngine = (function () {
         padding: 1px 5px;
         border-radius: 4px;
       }
-
-      /* MODAL ĐĂNG NHẬP ADMIN & THIẾT KẾ NỘI THẤT */
       .adm-modal-backdrop {
         position: fixed;
         inset: 0;
@@ -272,8 +379,6 @@ window.NQDAdminEngine = (function () {
         box-shadow: 0 20px 50px rgba(0,0,0,0.5);
         font-family: system-ui, sans-serif;
       }
-
-      /* Trình thiết kế Bố cục nội thất phòng lớn (C3, E2) */
       #interior-editor-canvas {
         width: 100%;
         height: 290px;
@@ -296,15 +401,11 @@ window.NQDAdminEngine = (function () {
         cursor: pointer;
         padding: 2px;
       }
-      .interior-preview-box.active-sub {
-        outline: 3px solid #dc2626;
-        z-index: 10;
-      }
     `;
     document.head.appendChild(style);
   }
 
-  // ================= 2. HỘP THOẠI ĐĂNG NHẬP 2 CẤP MẬT KHẨU (FA & AL - C4) =================
+  // ================= 3. ĐĂNG NHẬP 2 CẤP MẬT KHẨU (FA & AL) =================
   function ensureLoginModal() {
     if (document.getElementById('admin-login-backdrop')) return;
     const div = document.createElement('div');
@@ -347,7 +448,6 @@ window.NQDAdminEngine = (function () {
 
   function openLoginPrompt() {
     if (currentRole) {
-      // Nếu đã đăng nhập rồi thì bật/tắt bảng Admin
       logoutAdmin();
       return;
     }
@@ -398,7 +498,6 @@ window.NQDAdminEngine = (function () {
     dragMapEnabled = false;
     document.body.classList.remove('admin-split-mode');
 
-    // Khi thoát Admin, đưa màn hình hiển thị về đúng Sheet đang được đặt là Public cho khách (C2)
     const state = window.NQDMapApp.getState();
     state.currentViewingSheetId = state.activePublicSheetId || 'sheet_origin';
     window.NQDMapApp.saveState();
@@ -413,7 +512,7 @@ window.NQDAdminEngine = (function () {
     setTimeout(() => window.NQDMapApp.centerOnFlagpole(), 260);
   }
 
-  // ================= 3. THANH QUẢN LÝ ĐA SHEET NHƯ EXCEL (C1, C2) =================
+  // ================= 4. THANH SHEET EXCEL (C1, C2) =================
   function ensureExcelSheetBar() {
     if (document.getElementById('excel-sheet-bar')) return;
     const bar = document.createElement('div');
@@ -433,7 +532,6 @@ window.NQDAdminEngine = (function () {
     const activeSheet = window.NQDMapApp.getActiveSheet();
     bar.innerHTML = '';
 
-    // Danh sách các Sheet
     state.sheets.forEach(sh => {
       const btn = document.createElement('button');
       btn.className = 'excel-sheet-tab' + (sh.id === activeSheet.id ? ' active' : '');
@@ -456,7 +554,6 @@ window.NQDAdminEngine = (function () {
       bar.appendChild(btn);
     });
 
-    // Các nút quản lý Sheet dành riêng cho Full Admin (FA)
     if (currentRole === 'FA') {
       const addBtn = document.createElement('button');
       addBtn.className = 'adm-btn adm-btn-success';
@@ -473,8 +570,9 @@ window.NQDAdminEngine = (function () {
         pubBtn.onclick = () => {
           state.activePublicSheetId = activeSheet.id;
           window.NQDMapApp.saveState();
+          scheduleAutoCloudPush();
           renderExcelSheetBar();
-          alert(`Đã đặt "${activeSheet.name}" làm bản đồ hiển thị chính thức (Public) cho khách tham quan!`);
+          alert(`Đã đặt "${activeSheet.name}" làm bản đồ hiển thị chính thức (Public) cho mọi điện thoại khách tham quan!`);
         };
         bar.appendChild(pubBtn);
       }
@@ -509,6 +607,7 @@ window.NQDAdminEngine = (function () {
     state.currentViewingSheetId = newSheet.id;
     state.activePublicSheetId = newSheet.id;
     window.NQDMapApp.saveState();
+    scheduleAutoCloudPush();
     window.NQDMapApp.refreshAll();
     renderExcelSheetBar();
     renderAdminPanel();
@@ -523,12 +622,13 @@ window.NQDAdminEngine = (function () {
       state.activePublicSheetId = 'sheet_origin';
     }
     window.NQDMapApp.saveState();
+    scheduleAutoCloudPush();
     window.NQDMapApp.refreshAll();
     renderExcelSheetBar();
     renderAdminPanel();
   }
 
-  // ================= 4. RENDER BẢNG ĐIỀU KHIỂN ADMIN BÊN PHẢI (40% MÀN HÌNH - E1) =================
+  // ================= 5. RENDER BẢNG ĐIỀU KHIỂN ADMIN BÊN PHẢI =================
   function renderAdminPanel(selectedRoomObj) {
     const container = document.getElementById('admin-panel-container');
     if (!container || !currentRole) return;
@@ -542,15 +642,16 @@ window.NQDAdminEngine = (function () {
       <div class="adm-top-bar">
         <div>
           <span class="adm-role-badge ${isFA ? '' : 'lite'}">
-            ${isFA ? '👑 FULL ADMIN (NQD Events / BGH)' : '🛠️ ADMIN LITE (Thiết kế Gian hàng)'}
+            ${isFA ? '👑 FULL ADMIN' : '🛠️ ADMIN LITE'}
           </span>
+          <span id="adm-cloud-status-pill">${getCleanFirebaseUrl() ? cloudStatusText : 'Chưa nối Cloud'}</span>
           <div style="font-size:11.5px;color:#94a3b8;margin-top:3px;">
             Sheet đang mở: <strong style="color:#38bdf8;">${sheet.name}</strong>
           </div>
         </div>
         <div style="display:flex;gap:6px;">
-          <button class="adm-btn adm-btn-warn" onclick="NQDAdminEngine.exportSingleMobileHTML()" title="Gộp tất cả thành 1 file HTML duy nhất để gửi Zalo mở trên Điện thoại">
-            📲 Xuất 1 File cho ĐT
+          <button class="adm-btn adm-btn-success" onclick="NQDAdminEngine.pushStateToCloud(true)" title="Đồng bộ ngay lập tức mọi thay đổi lên Đám mây cho toàn bộ Điện thoại">
+            ☁️ Đẩy lên Cloud
           </button>
           <button class="adm-btn adm-btn-danger" onclick="NQDAdminEngine.logoutAdmin()">Thoát</button>
         </div>
@@ -568,7 +669,7 @@ window.NQDAdminEngine = (function () {
             🤝 Nhà Tài Trợ & Line Cố Định
           </button>
           <button class="adm-tab-btn ${activeTab === 'tab_security' ? 'active' : ''}" onclick="NQDAdminEngine.switchTab('tab_security')">
-            🔐 Mật khẩu & Quyền AL
+            🔐 Mật khẩu & Đồng bộ Cloud
           </button>
         ` : ''}
       </div>
@@ -593,9 +694,7 @@ window.NQDAdminEngine = (function () {
     renderAdminPanel();
   }
 
-  // ----------------- TAB 1: CHỈNH SỬA PHÒNG, GIAN HÀNG & NỘI THẤT -----------------
   function renderRoomTab(body, room, isFA, perms, sheet) {
-    // Khung công cụ tạo Gian hàng mới & Bật kéo thả trực tiếp trên Map
     const canAdd = isFA || perms.canAddBooth;
     const canMove = isFA || perms.canMoveBooth;
 
@@ -624,7 +723,7 @@ window.NQDAdminEngine = (function () {
         ` : ''}
       </div>
       <div style="font-size:12px;color:#475569;">
-        💡 <em>Chạm vào bất kỳ phòng hoặc gian hàng nào trên bản đồ bên trái để chỉnh sửa thông tin, hình ảnh và bố cục.</em>
+        💡 <em>Chạm vào bất kỳ phòng hoặc gian hàng nào trên bản đồ bên trái để chỉnh sửa. Mọi thay đổi sẽ tự động đẩy lên Cloud.</em>
       </div>
     `;
     body.appendChild(topTools);
@@ -637,7 +736,6 @@ window.NQDAdminEngine = (function () {
       return;
     }
 
-    // Kiểm tra Trục trung tâm khóa cứng (Cổng chính, Tượng Cụ, Cột cờ)
     if (room.locked) {
       const lockCard = document.createElement('div');
       lockCard.className = 'adm-card';
@@ -652,7 +750,6 @@ window.NQDAdminEngine = (function () {
       return;
     }
 
-    // Kiểm tra bảo vệ Sheet Map Gốc (C1)
     if (sheet.lockedOrigin && !sheet.allowEditOriginTemp) {
       const originWarn = document.createElement('div');
       originWarn.className = 'adm-card';
@@ -668,7 +765,6 @@ window.NQDAdminEngine = (function () {
       return;
     }
 
-    // Kiểm tra quyền Admin Lite (AL chỉ được sửa gian hàng hoặc khi FA mở quyền)
     if (!isFA && !room.isCustomBooth) {
       const alWarn = document.createElement('div');
       alWarn.className = 'adm-card';
@@ -684,7 +780,6 @@ window.NQDAdminEngine = (function () {
 
     const canEditInfo = isFA || perms.canEditInfo;
     const canAssignTags = isFA || perms.canAssignTags;
-
     const editCard = document.createElement('div');
     editCard.className = 'adm-card';
 
@@ -706,7 +801,6 @@ window.NQDAdminEngine = (function () {
         ` : ''}
       </div>
 
-      <!-- Công tắc Nhãn "Đang sửa" -> Hiển thị "Đang cập nhật" (B2) -->
       <div class="adm-switch-row" style="background:#fef2f2;border:1px solid #fecaca;">
         <span style="color:#991b1b;">🔧 Gắn nhãn "Đang sửa" (Khách xem chỉ hiện "Đang cập nhật")</span>
         <input type="checkbox" ${room.underMaintenance ? 'checked' : ''} onchange="NQDAdminEngine.updateRoomProp('${room.id}', 'underMaintenance', this.checked)" />
@@ -773,7 +867,7 @@ window.NQDAdminEngine = (function () {
       </div>
 
       <div class="adm-field">
-        <label>🖼️ Hình ảnh khu vực (Hỗ trợ cả Dán Link URL & Tải ảnh từ máy - C4):</label>
+        <label>🖼️ Hình ảnh khu vực (Dán Link URL hoặc Tải ảnh từ máy):</label>
         <input type="text" class="adm-input" placeholder="Dán link ảnh (https://...) hoặc tải file bên dưới" value="${room.imageUrl || ''}" oninput="NQDAdminEngine.updateRoomProp('${room.id}', 'imageUrl', this.value)" />
         <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
           <input type="file" accept="image/*" style="font-size:12px;flex:1;" onchange="NQDAdminEngine.handleImageFileUpload(event, '${room.id}')" />
@@ -786,7 +880,6 @@ window.NQDAdminEngine = (function () {
         <textarea class="adm-textarea" ${!canEditInfo ? 'disabled' : ''} oninput="NQDAdminEngine.updateRoomProp('${room.id}', 'desc', this.value)">${room.desc || ''}</textarea>
       </div>
 
-      <!-- C3 & E2: THIẾT KẾ BỐ CỤC NỘI THẤT BÊN TRONG KHU VỰC LỚN -->
       ${isFA ? `
         <div style="border-top:1.5px dashed #cbd5e1;padding-top:10px;display:flex;flex-direction:column;gap:8px;">
           <div class="adm-switch-row" style="background:#e0f2fe;border:1px solid #7dd3fc;">
@@ -803,32 +896,26 @@ window.NQDAdminEngine = (function () {
     body.appendChild(editCard);
   }
 
-  // ----------------- TAB 2: HEADER, FONT SỰ KIỆN & NHÃN BỘ LỌC (A1, A5a) -----------------
   function renderEventHeaderTab(body, sheet) {
     const card = document.createElement('div');
     card.className = 'adm-card';
-
     const presetOptions = FONT_PRESETS.map((p, idx) => `<option value="${idx}">${p.name}</option>`).join('');
     const coOrgs = sheet.coOrganizers || [];
 
     card.innerHTML = `
-      <div class="adm-card-title">🎨 Cài đặt Header, Tiêu đề & Font chữ Sự kiện (A1, A5a)</div>
-
+      <div class="adm-card-title">🎨 Cài đặt Header, Tiêu đề & Font chữ Sự kiện</div>
       <div class="adm-switch-row">
         <span>Chế độ Bản đồ Sự kiện (Hiện ngày diễn ra, Bộ lọc SK & Nút Nhà tài trợ)</span>
         <input type="checkbox" ${sheet.isEvent ? 'checked' : ''} onchange="NQDAdminEngine.updateSheetMeta('isEvent', this.checked)" />
       </div>
-
       <div class="adm-field">
         <label>Tiêu đề hiển thị trên Header:</label>
         <input type="text" class="adm-input" value="${sheet.headerTitle || ''}" oninput="NQDAdminEngine.updateSheetMeta('headerTitle', this.value)" />
       </div>
-
       <div class="adm-field">
         <label>Ngày diễn ra sự kiện (VD: 31/10/2026 - Đêm hội Halloween):</label>
         <input type="text" class="adm-input" value="${sheet.eventDate || ''}" placeholder="Để trống nếu ở trạng thái mặc định" oninput="NQDAdminEngine.updateSheetMeta('eventDate', this.value)" />
       </div>
-
       <div class="adm-field">
         <label>Chọn nhanh Font chữ chủ đề (VD: Font Halloween ghê rợn):</label>
         <select class="adm-select" onchange="NQDAdminEngine.applyFontPreset(this.value)">
@@ -836,7 +923,6 @@ window.NQDAdminEngine = (function () {
           ${presetOptions}
         </select>
       </div>
-
       <div class="adm-row-2">
         <div class="adm-field">
           <label>Link Google Font tùy chỉnh:</label>
@@ -850,7 +936,6 @@ window.NQDAdminEngine = (function () {
     `;
     body.appendChild(card);
 
-    // Card Logo Trường & CLB Đồng tổ chức (NQD Events * Dance Crew / ESC - E4)
     const orgCard = document.createElement('div');
     orgCard.className = 'adm-card';
     orgCard.innerHTML = `
@@ -877,7 +962,6 @@ window.NQDAdminEngine = (function () {
     `;
     body.appendChild(orgCard);
 
-    // Card Quản lý Bộ lọc Nhãn chú ý đặc biệt của sự kiện
     const tagCard = document.createElement('div');
     tagCard.className = 'adm-card';
     const tags = sheet.eventTags || [];
@@ -898,7 +982,6 @@ window.NQDAdminEngine = (function () {
     body.appendChild(tagCard);
   }
 
-  // ----------------- TAB 3: TRANG KÉO NHÀ TÀI TRỢ & LINE CỐ ĐỊNH (E4, F2, D2) -----------------
   function renderSponsorsAndLinesTab(body, sheet) {
     const spCard = document.createElement('div');
     spCard.className = 'adm-card';
@@ -906,11 +989,8 @@ window.NQDAdminEngine = (function () {
 
     spCard.innerHTML = `
       <div class="adm-card-title">
-        <span>🤝 Thiết kế Trang kéo "Các Nhà Tài Trợ" (E4, F2)</span>
+        <span>🤝 Thiết kế Trang kéo "Các Nhà Tài Trợ"</span>
         <button class="adm-btn adm-btn-success" style="padding:4px 8px;font-size:11.5px;" onclick="NQDAdminEngine.addSponsorTier()">＋ Thêm Hạng Mục</button>
-      </div>
-      <div style="font-size:12px;color:#475569;">
-        Tạo các phần (VD: <em>Nhà tài trợ Kim Cương, Vàng, Đồng hành...</em>), chèn Logo, Tên và Link Fanpage/Web cho từng nhà tài trợ.
       </div>
       <div style="display:flex;flex-direction:column;gap:10px;">
         ${tiers.map((tier, tIdx) => `
@@ -940,7 +1020,6 @@ window.NQDAdminEngine = (function () {
     `;
     body.appendChild(spCard);
 
-    // Card Tạo Line Cố Định Đặc Biệt cho Sự kiện (D2)
     const lineCard = document.createElement('div');
     lineCard.className = 'adm-card';
     const allRooms = [...window.NQDMapApp.getFixedLandmarks(), ...(sheet.rooms || [])];
@@ -948,10 +1027,7 @@ window.NQDAdminEngine = (function () {
     const fixedLines = sheet.fixedLines || [];
 
     lineCard.innerHTML = `
-      <div class="adm-card-title">🧭 Tạo Line Dẫn Đường Cố Định Đặc Biệt (D2)</div>
-      <div style="font-size:12px;color:#475569;">
-        Tạo đường line luôn hiển thị trên bản đồ cho các luồng di chuyển trọng tâm (VD: <em>Từ Cổng Chính ➔ Hội trường lớn</em>).
-      </div>
+      <div class="adm-card-title">🧭 Tạo Line Dẫn Đường Cố Định Đặc Biệt</div>
       <div class="adm-row-2">
         <div class="adm-field">
           <label>Từ điểm:</label>
@@ -978,9 +1054,34 @@ window.NQDAdminEngine = (function () {
     body.appendChild(lineCard);
   }
 
-  // ----------------- TAB 4: ĐỔI MẬT KHẨU 2 LOẠI & PHÂN QUYỀN ADMIN LITE (C4, E3) -----------------
   function renderSecurityTab(body, state) {
     const perms = state.litePermissions || {};
+    const currentCloudUrl = getCleanFirebaseUrl();
+
+    // Card Đồng bộ Đám mây Firebase
+    const cloudCard = document.createElement('div');
+    cloudCard.className = 'adm-card';
+    cloudCard.style.borderColor = '#0284c7';
+    cloudCard.style.background = '#f0f9ff';
+    cloudCard.innerHTML = `
+      <div class="adm-card-title" style="color:#0369a1;">☁️ Cấu hình Đồng Bộ Đám Mây (Firebase Realtime Database)</div>
+      <div style="font-size:12px;color:#334155;line-height:1.45;">
+        Dán link Firebase Realtime Database (VD: <code>https://bando-nqd-default-rtdb.firebaseio.com</code>) vào ô dưới đây hoặc vào <strong>dòng số 9 của file admin.js</strong> để mọi điện thoại khách tự động cập nhật theo thời gian thực:
+      </div>
+      <div class="adm-field">
+        <input type="text" id="adm-firebase-url-input" class="adm-input" placeholder="https://ten-du-an-default-rtdb.firebaseio.com" value="${currentCloudUrl}" />
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="adm-btn adm-btn-primary" onclick="NQDAdminEngine.saveFirebaseUrlFromInput()">
+          ☁️ Lưu Link & Đẩy dữ liệu lên Cloud ngay
+        </button>
+        <button class="adm-btn adm-btn-outline" onclick="NQDAdminEngine.pullStateFromCloud(false)">
+          🔄 Tải dữ liệu từ Cloud về máy
+        </button>
+      </div>
+    `;
+    body.appendChild(cloudCard);
+
     const secCard = document.createElement('div');
     secCard.className = 'adm-card';
     secCard.innerHTML = `
@@ -1002,10 +1103,7 @@ window.NQDAdminEngine = (function () {
     const permCard = document.createElement('div');
     permCard.className = 'adm-card';
     permCard.innerHTML = `
-      <div class="adm-card-title">🛡️ Bảng Mở Quyền Hạn Cho Admin Lite (E3)</div>
-      <div style="font-size:12px;color:#475569;">
-        Tùy theo sự kiện và độ phức tạp, Full Admin bật/tắt các quyền mà các CLB (Admin Lite) được phép làm:
-      </div>
+      <div class="adm-card-title">🛡️ Bảng Mở Quyền Hạn Cho Admin Lite</div>
       <div class="adm-switch-row">
         <span>1. Cho phép AL tự tạo thêm ô Gian hàng mới</span>
         <input type="checkbox" ${perms.canAddBooth ? 'checked' : ''} onchange="NQDAdminEngine.updateLitePerm('canAddBooth', this.checked)" />
@@ -1025,7 +1123,6 @@ window.NQDAdminEngine = (function () {
     `;
     body.appendChild(permCard);
 
-    // Sao lưu JSON & Khôi phục gốc
     const backupCard = document.createElement('div');
     backupCard.className = 'adm-card';
     backupCard.innerHTML = `
@@ -1036,7 +1133,7 @@ window.NQDAdminEngine = (function () {
           ⬆️ Nhập file JSON
           <input type="file" accept=".json" style="display:none;" onchange="NQDAdminEngine.importJSONBackup(event)" />
         </label>
-        <button class="adm-btn adm-btn-danger" onclick="if(confirm('Khôi phục toàn bộ dữ liệu về Map Gốc ban đầu?')) { NQDMapApp.resetMasterDefault(); NQDAdminEngine.renderExcelSheetBar(); NQDAdminEngine.renderAdminPanel(); }">
+        <button class="adm-btn adm-btn-danger" onclick="if(confirm('Khôi phục toàn bộ dữ liệu về Map Gốc ban đầu?')) { NQDMapApp.resetMasterDefault(); NQDAdminEngine.scheduleAutoCloudPush(); NQDAdminEngine.renderExcelSheetBar(); NQDAdminEngine.renderAdminPanel(); }">
           🔄 Reset về Mặc định
         </button>
       </div>
@@ -1044,12 +1141,10 @@ window.NQDAdminEngine = (function () {
     body.appendChild(backupCard);
   }
 
-  // ================= 5. CÁC HÀM XỬ LÝ CẬP NHẬT DỮ LIỆU THỜI GIAN THỰC =================
+  // ================= 6. CÁC HÀM CẬP NHẬT DỮ LIỆU & KÉO THẢ =================
   function onRoomSelected(room) {
     if (!currentRole) return;
-    if (activeTab !== 'tab_room') {
-      activeTab = 'tab_room';
-    }
+    if (activeTab !== 'tab_room') activeTab = 'tab_room';
     renderAdminPanel(room);
   }
 
@@ -1067,6 +1162,7 @@ window.NQDAdminEngine = (function () {
     r[prop] = value;
     window.NQDMapApp.saveState();
     window.NQDMapApp.refreshAll();
+    scheduleAutoCloudPush();
   }
 
   function toggleRoomTag(roomId, tagId, checked) {
@@ -1081,6 +1177,7 @@ window.NQDAdminEngine = (function () {
     }
     window.NQDMapApp.saveState();
     window.NQDMapApp.refreshAll();
+    scheduleAutoCloudPush();
   }
 
   function addNewBooth() {
@@ -1111,6 +1208,7 @@ window.NQDAdminEngine = (function () {
     window.NQDMapApp.saveState();
     window.NQDMapApp.refreshAll();
     window.NQDMapApp.selectRoomOnMap(newRoom.id);
+    scheduleAutoCloudPush();
   }
 
   function deleteRoom(roomId) {
@@ -1120,9 +1218,9 @@ window.NQDAdminEngine = (function () {
     window.NQDMapApp.saveState();
     window.NQDMapApp.refreshAll();
     renderAdminPanel(null);
+    scheduleAutoCloudPush();
   }
 
-  // Nén & Chuyển ảnh tải từ máy thành Base64 gọn nhẹ (C4)
   function readFileAsCompressedDataUrl(file, callback) {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -1156,7 +1254,6 @@ window.NQDAdminEngine = (function () {
     });
   }
 
-  // ================= 6. KÉO THẢ VỊ TRÍ PHÒNG / GIAN HÀNG TRỰC TIẾP TRÊN MAP =================
   function toggleMapDrag() {
     dragMapEnabled = !dragMapEnabled;
     renderAdminPanel(window.NQDMapApp.findRoomById(
@@ -1209,11 +1306,12 @@ window.NQDAdminEngine = (function () {
         window.NQDMapApp.saveState();
         window.NQDMapApp.refreshAll();
         onRoomSelected(finished);
+        scheduleAutoCloudPush();
       }
     });
   }
 
-  // ================= 7. THIẾT KẾ BỐ CỤC NỘI THẤT PHÒNG LỚN (C3, E2, D4) =================
+  // ================= 7. THIẾT KẾ NỘI THẤT PHÒNG LỚN =================
   function toggleInteriorPublic(roomId, checked) {
     const sheet = window.NQDMapApp.getActiveSheet();
     const r = sheet.rooms.find(x => x.id === roomId);
@@ -1222,6 +1320,7 @@ window.NQDAdminEngine = (function () {
     r.interiorPublic = checked;
     window.NQDMapApp.saveState();
     window.NQDMapApp.refreshAll();
+    scheduleAutoCloudPush();
   }
 
   function ensureInteriorModal() {
@@ -1237,7 +1336,7 @@ window.NQDAdminEngine = (function () {
         </div>
         <div style="padding:14px;display:flex;flex-direction:column;gap:12px;max-height:82vh;overflow-y:auto;">
           <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-            <span style="font-size:13px;color:#334155;">Thêm các khu vực nhỏ bên trong (Sân khấu, Bàn Check-in, Gian hàng trong hội trường...)</span>
+            <span style="font-size:13px;color:#334155;">Thêm các khu vực nhỏ bên trong (Sân khấu, Bàn Check-in, Gian hàng...)</span>
             <button class="adm-btn adm-btn-success" onclick="NQDAdminEngine.addInteriorSubItem()">＋ Thêm Ô Nội Thất</button>
           </div>
           <div id="interior-editor-canvas"></div>
@@ -1319,6 +1418,7 @@ window.NQDAdminEngine = (function () {
     window.NQDMapApp.saveState();
     window.NQDMapApp.refreshAll();
     renderInteriorDesignerContent();
+    scheduleAutoCloudPush();
   }
 
   function updateInteriorItem(idx, prop, val) {
@@ -1328,6 +1428,7 @@ window.NQDAdminEngine = (function () {
     room.interiorItems[idx][prop] = val;
     window.NQDMapApp.saveState();
     window.NQDMapApp.refreshAll();
+    scheduleAutoCloudPush();
     if (prop !== 'name' && prop !== 'desc') {
       renderInteriorDesignerContent();
     } else {
@@ -1344,14 +1445,16 @@ window.NQDAdminEngine = (function () {
     window.NQDMapApp.saveState();
     window.NQDMapApp.refreshAll();
     renderInteriorDesignerContent();
+    scheduleAutoCloudPush();
   }
 
-  // ================= 8. CẬP NHẬT HEADER, FONT, NHÀ TÀI TRỢ & MẬT KHẨU =================
+  // ================= 8. HEADER, FONT, NHÀ TÀI TRỢ & MẬT KHẨU =================
   function updateSheetMeta(prop, val) {
     const sheet = window.NQDMapApp.getActiveSheet();
     sheet[prop] = val;
     window.NQDMapApp.saveState();
     window.NQDMapApp.refreshAll();
+    scheduleAutoCloudPush();
   }
 
   function applyFontPreset(idxStr) {
@@ -1364,6 +1467,7 @@ window.NQDAdminEngine = (function () {
     window.NQDMapApp.saveState();
     window.NQDMapApp.refreshAll();
     renderAdminPanel();
+    scheduleAutoCloudPush();
   }
 
   function addCoOrganizer() {
@@ -1373,6 +1477,7 @@ window.NQDAdminEngine = (function () {
     window.NQDMapApp.saveState();
     window.NQDMapApp.refreshAll();
     renderAdminPanel();
+    scheduleAutoCloudPush();
   }
 
   function updateCoOrganizer(idx, prop, val) {
@@ -1381,6 +1486,7 @@ window.NQDAdminEngine = (function () {
       sheet.coOrganizers[idx][prop] = val;
       window.NQDMapApp.saveState();
       window.NQDMapApp.refreshAll();
+      scheduleAutoCloudPush();
     }
   }
 
@@ -1399,6 +1505,7 @@ window.NQDAdminEngine = (function () {
     window.NQDMapApp.saveState();
     window.NQDMapApp.refreshAll();
     renderAdminPanel();
+    scheduleAutoCloudPush();
   }
 
   function addEventTag() {
@@ -1411,6 +1518,7 @@ window.NQDAdminEngine = (function () {
     window.NQDMapApp.saveState();
     window.NQDMapApp.refreshAll();
     renderAdminPanel();
+    scheduleAutoCloudPush();
   }
 
   function updateEventTag(idx, val) {
@@ -1419,6 +1527,7 @@ window.NQDAdminEngine = (function () {
       sheet.eventTags[idx].label = val;
       window.NQDMapApp.saveState();
       window.NQDMapApp.refreshAll();
+      scheduleAutoCloudPush();
     }
   }
 
@@ -1428,6 +1537,7 @@ window.NQDAdminEngine = (function () {
     window.NQDMapApp.saveState();
     window.NQDMapApp.refreshAll();
     renderAdminPanel();
+    scheduleAutoCloudPush();
   }
 
   function addSponsorTier() {
@@ -1441,12 +1551,14 @@ window.NQDAdminEngine = (function () {
     window.NQDMapApp.saveState();
     window.NQDMapApp.refreshAll();
     renderAdminPanel();
+    scheduleAutoCloudPush();
   }
 
   function updateTierName(tIdx, val) {
     const sheet = window.NQDMapApp.getActiveSheet();
     sheet.sponsorTiers[tIdx].tierName = val;
     window.NQDMapApp.saveState();
+    scheduleAutoCloudPush();
   }
 
   function removeSponsorTier(tIdx) {
@@ -1455,6 +1567,7 @@ window.NQDAdminEngine = (function () {
     window.NQDMapApp.saveState();
     window.NQDMapApp.refreshAll();
     renderAdminPanel();
+    scheduleAutoCloudPush();
   }
 
   function addSponsorItem(tIdx) {
@@ -1462,12 +1575,14 @@ window.NQDAdminEngine = (function () {
     sheet.sponsorTiers[tIdx].items.push({ name: 'Nhà tài trợ mới', logoUrl: '', linkUrl: '' });
     window.NQDMapApp.saveState();
     renderAdminPanel();
+    scheduleAutoCloudPush();
   }
 
   function updateSponsorItem(tIdx, sIdx, prop, val) {
     const sheet = window.NQDMapApp.getActiveSheet();
     sheet.sponsorTiers[tIdx].items[sIdx][prop] = val;
     window.NQDMapApp.saveState();
+    scheduleAutoCloudPush();
   }
 
   function uploadSponsorLogo(event, tIdx, sIdx) {
@@ -1484,6 +1599,7 @@ window.NQDAdminEngine = (function () {
     sheet.sponsorTiers[tIdx].items.splice(sIdx, 1);
     window.NQDMapApp.saveState();
     renderAdminPanel();
+    scheduleAutoCloudPush();
   }
 
   function addFixedEventLine() {
@@ -1500,6 +1616,7 @@ window.NQDAdminEngine = (function () {
     window.NQDMapApp.saveState();
     window.NQDMapApp.refreshAll();
     renderAdminPanel();
+    scheduleAutoCloudPush();
   }
 
   function removeFixedEventLine(idx) {
@@ -1508,6 +1625,7 @@ window.NQDAdminEngine = (function () {
     window.NQDMapApp.saveState();
     window.NQDMapApp.refreshAll();
     renderAdminPanel();
+    scheduleAutoCloudPush();
   }
 
   function savePasswords() {
@@ -1521,13 +1639,15 @@ window.NQDAdminEngine = (function () {
     state.passwords.fullAdmin = fa;
     state.passwords.adminLite = al;
     window.NQDMapApp.saveState();
-    alert('✅ Đã cập nhật thành công mật khẩu cho cả Full Admin và Admin Lite!');
+    scheduleAutoCloudPush();
+    alert('✅ Đã cập nhật mật khẩu và đồng bộ lên Cloud thành công!');
   }
 
   function updateLitePerm(prop, val) {
     const state = window.NQDMapApp.getState();
     state.litePermissions[prop] = val;
     window.NQDMapApp.saveState();
+    scheduleAutoCloudPush();
   }
 
   function exportJSONBackup() {
@@ -1557,46 +1677,23 @@ window.NQDAdminEngine = (function () {
     reader.readAsText(file);
   }
 
-  // ================= 9. XUẤT 1 FILE HTML ĐỘC LẬP ĐỂ GỬI ZALO MỞ TRỰC TIẾP TRÊN ĐT =================
-  function exportSingleMobileHTML() {
-    const state = JSON.parse(JSON.stringify(window.NQDMapApp.getState()));
-    // Đảm bảo khi khách mở file trên ĐT sẽ nhìn thấy đúng Sheet đang đặt làm Public
-    state.currentViewingSheetId = state.activePublicSheetId || 'sheet_origin';
-
-    const stateJsonStr = JSON.stringify(state).replace(/<\/script>/gi, '<\\/script>');
-    const routingSource = `window.NQDRoutingEngine = (${window.NQDRoutingEngine ? 'function(){/* Đã nhúng */}' : ''});`;
-
-    // Clone toàn bộ trang hiện tại, nhúng sẵn dữ liệu mới nhất của Admin
-    const preloadScript = `
-      <script>
-        (function(){
-          try {
-            var bakedState = ${stateJsonStr};
-            localStorage.setItem('NQD_MAP_MASTER_DATA_V2', JSON.stringify(bakedState));
-          } catch(e){}
-        })();
-      <\/script>
-    `;
-
-    alert(
-      '💡 MẸO CHẠY TRÊN ĐIỆN THOẠI MƯỢT 100%:\n\n' +
-      '• Để điện thoại tải được đầy đủ cả 3 file (Chặng 1.html + routing.js + admin.js) và quét mã QR 20m ngoài đời thực, bạn hãy truy cập trang miễn phí: https://app.netlify.com/drop\n' +
-      '• Kéo nguyên thư mục D:\\MapNQD thả vào đó -> Bạn sẽ có ngay 1 đường link https://... gửi qua Zalo cho mọi điện thoại dùng mượt 100%!\n\n' +
-      'Hệ thống cũng sẽ tải về file dữ liệu đã cập nhật của bạn ngay bây giờ.'
-    );
-    exportJSONBackup();
-  }
-
   function init() {
     injectAdminStyles();
     ensureExcelSheetBar();
     setupMapRoomDragging();
 
-    // Khi khách bình thường mở web, luôn hiển thị Sheet được FA đặt là Public (C2)
     const state = window.NQDMapApp.getState();
     if (!currentRole && state.activePublicSheetId) {
       state.currentViewingSheetId = state.activePublicSheetId;
       window.NQDMapApp.refreshAll();
+    }
+
+    // Tự động tải dữ liệu mới nhất từ Cloud ngay khi mở web & kiểm tra cập nhật mỗi 8 giây cho điện thoại khách
+    if (getCleanFirebaseUrl()) {
+      pullStateFromCloud(false);
+      setInterval(() => {
+        pullStateFromCloud(true);
+      }, 8000);
     }
   }
 
@@ -1646,7 +1743,10 @@ window.NQDAdminEngine = (function () {
     updateLitePerm,
     exportJSONBackup,
     importJSONBackup,
-    exportSingleMobileHTML,
+    pushStateToCloud,
+    pullStateFromCloud,
+    saveFirebaseUrlFromInput,
+    scheduleAutoCloudPush,
     renderExcelSheetBar,
     renderAdminPanel
   };
